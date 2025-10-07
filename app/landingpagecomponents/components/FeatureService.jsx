@@ -20,7 +20,7 @@ export default function FeatureService() {
   console.log("Services from redux state:", services);
 
   const [startIdx, setStartIdx] = useState(0);
-  const visibleCount = 2; // number of cards visible at a time
+  const visibleCount = 2; 
 
   // Fetch services from Redux
   useEffect(() => {

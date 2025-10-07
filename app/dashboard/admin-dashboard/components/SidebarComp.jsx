@@ -8,6 +8,18 @@ import { motion, AnimatePresence } from "framer-motion";
 const adminNavBar = [
   { name: "Dashboard", link: "/dashboard/admin-dashboard" },
   {
+    name:"Bookings",
+    children: [
+      { name: "All Bookings", link: "/dashboard/admin-dashboard/bookings" },
+      { name: "Confirmed Bookings", link: "/dashboard/admin-dashboard/confirmed-bookings" },
+      { name: "Completed Bookings", link: "/dashboard/admin-dashboard/completed-bookings" },
+      { name: "Cancelled Bookings", link: "/dashboard/admin-dashboard/cancelled-bookings" },
+      { name: "Rejected Bookings", link: "/dashboard/admin-dashboard/rejected-bookings" },
+      { name: "Pending Bookings", link: "/dashboard/admin-dashboard/pending-bookings" },
+    ],
+  },
+  { name: "Manage Users", link: "/dashboard/admin-dashboard/users" },
+  {
     name: "Manage KYC",
     children: [
       { name: "Approved Kycs", link: "/dashboard/admin-dashboard/approve-kycs" },

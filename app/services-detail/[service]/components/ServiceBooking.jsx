@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MyMap from "../../../../components/map/LeafletMap";
 
 // Format time helper
 const formatTime = (timeStr) => {
@@ -27,7 +28,49 @@ export default function ServiceBooking({ schedules = [], serviceDetail, user, so
   const [bidPrice, setBidPrice] = useState("");
   const [bids, setBids] = useState([]);
 
+  const [showMap, setShowMap] = useState(false);
+
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [position, setPosition] = useState(null);
+
   const packages = serviceDetail?.Packages || [];
+
+  const handleUseCurrentLocation = () => {
+    if(!navigator.geolocation){
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition((position)=>{
+      const {latitude, longitude} = position.coords;
+      console.log("User's location:", latitude, longitude);
+      toast.success("Location fetched successfully");
+      setPosition({latitude, longitude});
+    }, (error)=>{
+      console.error("Error fetching location:", error);
+      toast.error("Failed to fetch location");
+    });
+  }
+
+  const handlePickFromMap = ()=>{
+    if(!navigator.geolocation){
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition((position)=>{
+      const {latitude, longitude} = position.coords;
+      console.log("User's location:", latitude, longitude);
+      toast.info("You can now pick your location from the map");
+      setPosition({latitude, longitude});
+    }, (error)=>{
+      console.error("Error fetching location:", error);
+      toast.error("Failed to fetch location");
+    });
+    setShowMap(!showMap);
+    
+    
+  }
 
   // Reset price when package changes
   useEffect(() => {
@@ -119,7 +162,7 @@ export default function ServiceBooking({ schedules = [], serviceDetail, user, so
   return (
     <>
       <ToastContainer position="top-right" autoClose={5000} />
-      <div className="shadow-lg rounded-lg p-6 bg-white space-y-4">
+      <div className="shadow-lg rounded-lg p-6 bg-white space-y-4 h-full">
         <h2 className="text-xl font-semibold text-slate-800 mb-4">Book this Service</h2>
 
         {/* Day Selection */}
@@ -211,31 +254,32 @@ export default function ServiceBooking({ schedules = [], serviceDetail, user, so
           />
         </div>
 
+        {/* get current map location or use location from map
+         */}
+         <div className="space-y-2">
+          <p>Your Location</p>
+          <div className="flex gap-2"> 
+
+         <Button variant="outline" onClick={handleUseCurrentLocation}>Use Current Location</Button>
+         <Button variant="outline" onClick={handlePickFromMap}>Pick from Map</Button>
+          </div>
+          {showMap && (
+            <div className="mt-2" style={{height: "300px", width: "100%"}}>
+
+              <MyMap position={position ? [position.latitude, position.longitude] : [0,0]} zoom={position ? 100 : 2} onPositionChange={(pos) => setPosition(pos)}/>
+            </div>
+          )}
+
+         </div>
+         {position && (
+          <div className="text-sm text-green-700">
+            Fetched Location: Lat {position.latitude}, Lng {position.longitude}
+          </div>
+         )}
+
         <Button onClick={handleBooking} className="w-full bg-green-600 hover:bg-green-700 text-white mt-4">
           Confirm Booking
         </Button>
-
-        {/* Existing Bids */}
-        {/* {bids.length > 0 && (
-          <div className="mt-6 space-y-2">
-            <h3 className="font-semibold text-lg">Current Bids</h3>
-            {bids.map((bid) => (
-              <div key={bid.id} className="flex justify-between items-center p-2 border rounded">
-                <span>Rs. {bid.bidAmount} ({bid.status})</span>
-                {user?.id === serviceDetail.serviceProviderId && bid.status === "pending" && (
-                  <div className="space-x-2">
-                    <Button size="sm" onClick={() => handleBidAction(bid, "accept")}>
-                      Accept
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleBidAction(bid, "reject")}>
-                      Reject
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )} */}
       </div>
     </>
   );

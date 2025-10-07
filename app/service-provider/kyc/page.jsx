@@ -8,7 +8,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 export default function KycPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const entity = searchParams.get("name"); // 'gharbeti' or 'service-provider'
+  const entity = searchParams.get("name"); // 'gharbeti' or 'service_provider'
+  // alert(entity)
 
   const dispatch = useDispatch();
   const documentTypes = useSelector((state) => state.document.list);

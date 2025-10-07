@@ -56,6 +56,7 @@ export default function ProviderLayout({ children }) {
         const data = await res.json();
 
         if (data.status === "success") {
+          console.log("data",data)  
           setUser(data.data.serviceProvider);
           console.log("data",data.data)
           setVerified(data.data.serviceProvider.is_verified);
@@ -118,6 +119,8 @@ export default function ProviderLayout({ children }) {
       credentials: "include",
       method: "POST",
     });
+
+
     setUser(null);
     window.location.href = "/";
   };

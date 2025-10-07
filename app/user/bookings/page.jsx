@@ -43,7 +43,7 @@ export default function MyBookingsPage() {
         <h1 className="text-2xl font-bold mb-6">My Bookings</h1>
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          {['All', 'Accepted', 'Pending', 'Rejected'].map(tab => (
+          {['All', 'Confirmed', 'Completed', 'Cancelled', 'Rejected', 'Pending'].map(tab => (
             <button
               key={tab}
               className={`px-4 py-2 rounded-lg font-medium transition border ${activeTab === tab ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
@@ -63,7 +63,15 @@ export default function MyBookingsPage() {
             {bookings
               .filter(booking => {
                 if (activeTab === 'All') return true;
-                return booking.status?.toLowerCase() === activeTab.toLowerCase();
+                const status = (booking.status || "").toString().toLowerCase();
+                const tab = activeTab.toLowerCase();
+                // map legacy/alternate statuses to new tabs
+                if (tab === 'confirmed') return status === 'confirmed' || status === 'accepted';
+                if (tab === 'completed') return status === 'completed' || status === 'done';
+                if (tab === 'cancelled') return status === 'cancelled' || status === 'canceled';
+                if (tab === 'rejected') return status === 'rejected';
+                if (tab === 'pending') return status === 'pending';
+                return status === tab;
               })
               .map((booking) => (
                 <div

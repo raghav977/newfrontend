@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-const BASE_URL = "http://localhost:3024/user";
+const BASE_URL = "http://localhost:5000/api/users";
 
 const initialState = {
   user: null,
@@ -8,46 +8,42 @@ const initialState = {
   error: null,
 };
 
-// Fetch logged-in user info
-// yo new wala
+// 🔹 Fetch logged-in user profile
 export const fetchAboutUser = createAsyncThunk(
   "auth/fetchAboutUser",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/users/profile`, { credentials: "include" });
+      const res = await fetch(`${BASE_URL}/profile`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch user info");
-      return await res.json();
+      const data = await res.json();
+      return data;
     } catch (err) {
       return rejectWithValue(err.message);
     }
   }
 );
 
-// Fetch user by ID
+// 🔹 Fetch currently authenticated user by ID
 export const fetchUserId = createAsyncThunk(
-  "user/id",
+  "auth/fetchUserId",
   async (_, { rejectWithValue }) => {
     try {
       const res = await fetch(`${BASE_URL}/id`, { credentials: "include" });
       if (!res.ok) throw new Error("Not authenticated");
-      return await res.json();
+      const data = await res.json();
+      return data;
     } catch (err) {
       return rejectWithValue(err.message);
     }
   }
 );
 
-// Login user
-
-// yo pani new wala
+// 🔹 Login user
 export const loginUser = createAsyncThunk(
-  "user/login",
-  async ({ email, password}, { rejectWithValue }) => {
-    console.log("This is email",email)
-    console.log("This is password",password)
-    // console.log("This is username",username)
+  "auth/loginUser",
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
+      const res = await fetch(`${BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -55,9 +51,7 @@ export const loginUser = createAsyncThunk(
       });
 
       const data = await res.json();
-      console.log("This is data",data)
       if (!res.ok) return rejectWithValue(data.message || "Login failed");
-
       return data;
     } catch (err) {
       return rejectWithValue(err.message || "Something went wrong");
@@ -65,29 +59,28 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-
+// 🔹 Fetch detailed user info (same as profile, but can be extended)
 export const aboutUser = createAsyncThunk(
-  "user/aboutUser",
+  "auth/aboutUser",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/users/profile`, {
-        credentials: "include", 
-      });
-
+      const res = await fetch(`${BASE_URL}/profile`, { credentials: "include" });
       const data = await res.json();
-      console.log("This is data",data);
-
-      if (!res.ok) {
-        return rejectWithValue(data.message || "Failed to fetch user details");
-      }
-
-      return data.data; 
+      if (!res.ok) return rejectWithValue(data.message || "Failed to fetch user details");
+      return data;
     } catch (err) {
       return rejectWithValue(err.message || "Something went wrong");
     }
   }
 );
 
+// 🔹 Helper: normalize user data no matter what API returns
+const normalizeUser = (payload) => {
+  // Handles { user: {...} }, { data: {...} }, or {...}
+  return payload?.user || payload?.data || payload || null;
+};
+
+// 🔹 Slice
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -103,66 +96,60 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchAboutUser
+      // 🔸 fetchAboutUser
       .addCase(fetchAboutUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchAboutUser.fulfilled, (state, action) => {
-        console.log("This is fetch about user redux action.payload", action.payload);
-
         state.loading = false;
-        state.user = action.payload;
+        state.user = normalizeUser(action.payload);
       })
       .addCase(fetchAboutUser.rejected, (state, action) => {
-        
         state.loading = false;
-        state.error = action.payload || "Something went wrong";
+        state.error = action.payload || "Failed to fetch user info";
       })
 
-      // fetchUserId
+      // 🔸 fetchUserId
       .addCase(fetchUserId.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchUserId.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = normalizeUser(action.payload);
       })
       .addCase(fetchUserId.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Something went wrong";
+        state.error = action.payload || "Not authenticated";
       })
 
-      // loginUser
+      // 🔸 loginUser
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        console.log("Thiis is action.payload",action.payload)
         state.loading = false;
-        state.user = action.payload.user;
+        state.user = normalizeUser(action.payload);
       })
-
-
-      builder
-  .addCase(aboutUser.pending, (state) => {
-    state.loading = true;
-    state.error = null;
-  })
-  .addCase(aboutUser.fulfilled, (state, action) => {
-    console.log("This is about user redux action.payload", action.payload);
-    state.loading = false;
-    state.user = action.payload;
-  })
-  .addCase(aboutUser.rejected, (state, action) => {
-    state.loading = false;
-    state.error = action.payload || "Something went wrong";
-  })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Login failed";
+      })
+
+      // 🔸 aboutUser
+      .addCase(aboutUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(aboutUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = normalizeUser(action.payload);
+      })
+      .addCase(aboutUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch user details";
       });
   },
 });

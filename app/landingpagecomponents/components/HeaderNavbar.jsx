@@ -37,7 +37,7 @@ export default function HeaderNavbar() {
         if (user?.service_provider_id) {
           router.push("/dashboard/provider-dashboard");
         } else {
-          router.push("/service-provider/kyc");
+          router.push("/service-provider/kyc?name=service_provider");
         }
       },
     },
@@ -53,7 +53,7 @@ export default function HeaderNavbar() {
         if (user?.gharbeti_id) {
           router.push("/dashboard/gharbeti-dashboard");
         } else {
-          router.push("/gharbeti/kyc");
+          router.push("/service-provider/kyc?name=gharbeti");
         }
       },
     },
