@@ -30,13 +30,14 @@ export const fetchAllServicesName = createAsyncThunk(
 
 export const fetchServicesImageTitleRate = createAsyncThunk(
   "services/fetchServicesImageTitleRate",
-  async ({ limit = 10, offset = 0 } = {}, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      // Add limit and offset as query params
-      const response = await fetch(
-        `${BASE_URL_PUBLIC}/service-picture?limit=${limit}&offset=${offset}`
-      );
+      // Convert params object to query string
+      console.log("Fetching services with params:", params);
+      const queryString = new URLSearchParams(params).toString();
+      console.log("Constructed query string:", queryString);
 
+      const response = await fetch(`${BASE_URL_PUBLIC}/service-picture?${queryString}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -44,15 +45,17 @@ export const fetchServicesImageTitleRate = createAsyncThunk(
       }
 
       const data = await response.json();
-      console.log("This is my services data", data);
+      console.log("Fetched services data:", data);
 
-      
-      const services = data.results.map(service => ({
+      // Map the API results to the format your UI expects
+      const services = data.results.map((service) => ({
         id: service.id,
         name: service.Service?.name,
         rate: service.rate,
         description: service.description,
-        images: service.ServiceImages?.map(img => img.image_path) || [],
+        images: service.ServiceImages?.map((img) => img.image_path) || [],
+        location: service.ServiceLocations?.[0] || null, // optional
+        packages: service.Packages || [], // optional
       }));
 
       return services;
@@ -63,24 +66,36 @@ export const fetchServicesImageTitleRate = createAsyncThunk(
 );
 
 
+
 // service detail wala ko lagi
 
 export const fetchServiceDetailById = createAsyncThunk(
   "services/fetchServiceDetailById",
-  async (id, { rejectWithValue }) => {
+  async ({ service, lat, lon }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${BASE_URL_PUBLIC}/service-detail/${id}`);
+      console.log("Fetching service detail for ID:", service, "with lat:", lat, "and lon:", lon);
+      const query = new URLSearchParams();
+      if (lat && lon) {
+        query.append("lat", lat);
+        query.append("lon", lon);
+      }
+
+      const response = await fetch(`${BASE_URL_PUBLIC}/service-detail/${service}?${query.toString()}`);
+      
       if (!response.ok) {
         const errorData = await response.json();
         return rejectWithValue(errorData.message || "Failed to fetch service details");
       }
+
       const data = await response.json();
+      console.log("SERVICE DETAIL DATA", data);
       return data.data.serviceDetail || null;
     } catch (err) {
       return rejectWithValue(err.message || "Something went wrong");
     }
   }
 );
+
 
 
 // fetchmyservices ko lagi chai auth token ko jarurat xa yo chai serviceprovider wala ko lagi

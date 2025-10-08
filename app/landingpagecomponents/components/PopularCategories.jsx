@@ -22,7 +22,7 @@ export default function PopularCategory() {
     dispatch(fetchAllServicesName());
   }, [dispatch]);
 
-  const marqueeCategories = [...services, ...services]; // duplicate for infinite scroll
+  const marqueeCategories = [...services, ...services]; 
 
   if (loading) {
     return (

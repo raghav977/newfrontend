@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import Map from "../../../../../components/Map"
+import MapforService from "../../../../../components/map/MapforService";
+
 import {
   Dialog,
   DialogTrigger,
@@ -43,12 +46,12 @@ export default function AddService() {
   const { list } = useSelector((state) => state.allServices);
 
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
-
+const [showMap, setShowMap] = useState(false);
   const [newService, setNewService] = useState({
     category: "",
     description: "",
     rate: "",
-    locations: [], // will store location ids from API
+    locations: [], 
     documents: [],
     photos: [], // File objects, up to 8 photos (required)
     showLocationDropdown: false,
@@ -58,10 +61,16 @@ export default function AddService() {
     newInclude: "",
   });
 
+  const handleMapOpen = ()=>{
+    setShowMap(!showMap);
+
+  }
+
   const [locationsList, setLocationsList] = useState([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [photoPreviews, setPhotoPreviews] = useState([]); // { id, url }
 
+  const [serviceLocation,setServiceLocation] = useState([]);
   useEffect(() => {
     dispatch(fetchAllServicesReal());
   }, [dispatch]);
@@ -88,9 +97,9 @@ export default function AddService() {
     };
   }, []);
 
-  // build photo previews and revoke old URLs
+  
   useEffect(() => {
-    // revoke existing
+    
     photoPreviews.forEach((p) => {
       try { URL.revokeObjectURL(p.url); } catch (e) {}
     });
@@ -148,7 +157,7 @@ export default function AddService() {
     }));
   };
 
-  // Photos handlers (max 8)
+  
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files || []);
     const imageFiles = files.filter((f) => f.type.startsWith("image/"));
@@ -169,6 +178,27 @@ export default function AddService() {
       photos: prev.photos.filter((p, idx) => `${p.name}-${idx}-${p.size}` !== fileKey),
     }));
   };
+
+  const handleSavelocation = (data)=>{
+    if(!data){
+      toast.error("Please select a location first.", { position: "top-center", autoClose: 3000 });
+    }
+
+    console.log("This is data",data);
+    setNewService((prev) => ({ ...prev, locations: [{
+      latitude: data.latitude,
+      longitude:data.longitude,
+      radius:data.radius
+    }] }));
+
+    setShowMap(false);
+
+  }
+
+  useEffect(()=>{
+    console.log("This is new service",newService)
+  },[newService])
+
 
   const wordCount = useMemo(() => {
     return (newService.description || "").trim().split(/\s+/).filter(Boolean).length;
@@ -251,9 +281,8 @@ export default function AddService() {
       fd.append("description", newService.description || "");
       fd.append("rate", String(newService.rate || 0));
       // backend expects location ids array — send as JSON string
-    newService.locations.forEach(locId => {
-  fd.append("location[]", locId); 
-});
+   fd.append("locations", JSON.stringify(newService.locations));
+
 
      newService.includes.forEach(item => fd.append("include[]", item));
 mappedSchedules.forEach(sch => fd.append("schedules[]", JSON.stringify(sch)));
@@ -354,39 +383,17 @@ mappedSchedules.forEach(sch => fd.append("schedules[]", JSON.stringify(sch)));
               </div>
 
               <div>
-                <Label className="text-green-700">Service Locations</Label>
-                <div className="relative">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between border-green-200 hover:border-green-500 bg-transparent"
-                    onClick={() => setNewService((prev) => ({ ...prev, showLocationDropdown: !prev.showLocationDropdown }))}
-                  >
-                    <span>{newService.locations.length ? `${newService.locations.length} selected` : "Select locations"}</span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0" />
-                  </Button>
-                  {newService.showLocationDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-green-200 rounded-md shadow-lg max-h-48 overflow-auto">
-                      {locationsLoading && <div className="p-3 text-sm text-gray-500">Loading locations...</div>}
-                      {!locationsLoading && locationsList.length === 0 && <div className="p-3 text-sm text-gray-500">No locations found</div>}
-                      {!locationsLoading && locationsList.map((loc) => (
-                        <div
-                          key={loc.id}
-                          className="flex items-center px-3 py-2 hover:bg-green-50 cursor-pointer"
-                          onClick={() =>
-                            setNewService((prev) => ({
-                              ...prev,
-                              locations: prev.locations.includes(loc.id) ? prev.locations.filter((l) => l !== loc.id) : [...prev.locations, loc.id],
-                            }))
-                          }
-                        >
-                          <input type="checkbox" checked={newService.locations.includes(loc.id)} className="mr-3 accent-green-600" readOnly />
-                          <span className="text-sm">{loc.city}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <Label className="text-green-700">Service Locations (Radius from your current location)</Label>
+                <Button variant="outline" className="w-full justify-between border-green-200 hover:border-green-500 bg-transparent" onClick={handleMapOpen}>
+                  Select Location
+                </Button>
               </div>
+
+              {serviceLocation && (
+                <div className="text-sm text-black-700 mt-2">
+                  Selected Location: Lat {serviceLocation.latitude}, Lng {serviceLocation.longitude}, Radius {serviceLocation.radius} km
+                </div>
+              )}
 
               <div>
                 <Label className="text-green-700">Upload Documents</Label>
@@ -525,6 +532,56 @@ mappedSchedules.forEach(sch => fd.append("schedules[]", JSON.stringify(sch)));
               </div>
             </div>
           </div>
+
+         {showMap && (
+  <div
+    className="fixed inset-0 flex items-center justify-center z-50 overflow-hidden"
+    style={{
+      backgroundColor: "transparent",
+      backdropFilter: "none",
+    }}
+  >
+    {/* 🧭 Modal Box */}
+    <div
+      className="rounded-2xl shadow-2xl w-11/12 max-w-3xl bg-white relative p-6"
+      style={{
+        maxHeight: "90vh",
+        overflowY: "auto", // allow map + form scroll inside, not body
+      }}
+    >
+      {/* ❌ Close Button */}
+      <button
+        onClick={() => setShowMap(false)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl font-bold"
+      >
+        ✕
+      </button>
+
+      {/* 🌍 Map + Radius Form */}
+      <h2 className="text-xl font-semibold mb-4 text-gray-800">
+        Select Your Service Area
+      </h2>
+      <MapforService
+        onChange={(data) => {
+          setServiceLocation(data);
+          // you can save to state or send to backend
+        }}
+      />
+
+      {/* 🧾 Save Button */}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={() => handleSavelocation(serviceLocation)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow"
+        >
+          Save Location
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-green-100">
             <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-green-300 text-green-700 hover:bg-green-50">Cancel</Button>

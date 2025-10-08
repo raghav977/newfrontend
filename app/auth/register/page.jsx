@@ -49,6 +49,7 @@ export default function ServiceProviderSignup() {
         const res = await fetch("http://localhost:5000/api/address/provinces");
         if (!res.ok) return;
         const json = await res.json();
+        console.log("This is json", json);
         const arr = json?.data?.provinces ?? [];
         setProvinces(arr);
       } catch (e) {
