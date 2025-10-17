@@ -69,7 +69,7 @@ export default function PaymentSetup() {
         account_holder_name: bankDetails.accountName.trim(),
       };
 
-      const res = await fetch("http://localhost:5000/api/payments/create-payment-account", {
+      const res = await fetch("https://backendwala.onrender.com/api/payments/create-payment-account", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -102,6 +102,9 @@ export default function PaymentSetup() {
   };
 
   const handleCopy = async (value, key) => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     try {
       await navigator.clipboard.writeText(value || "");
       setCopied(key);

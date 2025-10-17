@@ -35,6 +35,11 @@ let socket;
 
 
 export const connectSocketConnection = ()=>{
+    // Only run on client side
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    
     if(!socket){
         socket = io("http://localhost:5000",{
             withCredentials:true,

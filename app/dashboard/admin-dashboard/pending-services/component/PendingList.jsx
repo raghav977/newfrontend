@@ -6,7 +6,8 @@ import { fetchServiceByStatus } from "@/app/redux/slices/serviceSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = `${process.env.RENDER_BASE}`;
+
 
 export default function PendingList() {
   const dispatch = useDispatch();

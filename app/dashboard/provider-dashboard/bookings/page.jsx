@@ -48,7 +48,7 @@ export default function MyBookings() {
     const fetchBookings = async () => {
       setLoading(true);
       try {
-        const base = "http://localhost:5000/api/booking/provider";
+        const base = "https://backendwala.onrender.com/api/booking/provider";
         let backendStatus = selectedStatus === "confirmed" ? "accepted" : selectedStatus;
         const url =
           backendStatus && backendStatus !== "all"
@@ -76,7 +76,7 @@ export default function MyBookings() {
     const fetchBids = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/bids/user/bids?bookingId=${selectedBooking.id}`,
+          `https://backendwala.onrender.com/api/bids/user/bids?bookingId=${selectedBooking.id}`,
           { credentials: "include" }
         );
         const data = await res.json();

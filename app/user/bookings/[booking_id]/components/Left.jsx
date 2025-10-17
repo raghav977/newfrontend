@@ -20,7 +20,7 @@ export default function LeftSide({ bookingId }) {
     useEffect(() => {
         const fetchBids = async () => {
             try {
-                const response = await fetch(`http://localhost:5000/api/bids/user/bids?bookingId=${bookingId}`, { credentials: "include" });
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/bids?bookingId=${bookingId}`, { credentials: "include" });
                 const data = await response.json();
                 console.log("This is fetch bids", data?.message);
 
@@ -40,7 +40,7 @@ export default function LeftSide({ bookingId }) {
     useEffect(() => {
         if (!socketRef) {
             // Initialize socket connection
-            const socketConnection = io("http://localhost:5000", { withCredentials: true, transports: ["websocket"] });
+            const socketConnection = io(`${process.env.RENDER_BASE}`, { withCredentials: true, transports: ["websocket"] });
             setSocketRef(socketConnection);
             console.log("Socket connection established:", socketConnection);
 

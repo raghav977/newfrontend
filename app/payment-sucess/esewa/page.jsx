@@ -1,37 +1,46 @@
-// pages/payment-success/esewa.jsx
+"use client";
 
-"use client"
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function EsewaSuccess() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const amt = searchParams.get("amt");
-  const refId = searchParams.get("refId");
-  const oid = searchParams.get("oid");
+  const [status, setStatus] = useState("Processing your payment...");
 
   useEffect(() => {
+    // Make sure this code runs only in the browser
+    if (typeof window === 'undefined') return;
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    const amt = searchParams.get("amt");
+    const refId = searchParams.get("refId");
+    const oid = searchParams.get("oid");
+
     async function verifyPayment() {
       try {
-        const res = await axios.post("http://localhost:5000/api/payment/esewa/verify", {
+        const res = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment/esewa/verify`, {
           amt,
           refId,
           oid,
         });
         console.log("Payment verified:", res.data);
-        alert("Payment verified successfully!");
+        setStatus("Payment verified successfully!");
       } catch (err) {
         console.error("Payment verification failed:", err);
-        alert("Verification failed!");
+        setStatus("Payment verification failed!");
       }
     }
-    verifyPayment();
+
+    // Only call if we actually have query params
+    if (amt && refId && oid) {
+      verifyPayment();
+    } else {
+      setStatus("Invalid payment data.");
+    }
   }, []);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
-      <h2 className="text-xl font-semibold">Processing your payment...</h2>
+      <h2 className="text-xl font-semibold">{status}</h2>
     </div>
   );
 }

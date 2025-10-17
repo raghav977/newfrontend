@@ -31,6 +31,9 @@ export default function ServiceDetailPage() {
   
 
 useEffect(() => {
+  // Only run on client side
+  if (typeof window === 'undefined') return;
+  
   if (navigator.geolocation) {
     console.log("Fetching user location...");
 
@@ -80,7 +83,7 @@ useEffect(() => {
   // Initialize socket only if user is signed in
   useEffect(() => {
     if (user) {
-      const newSocket = io("http://localhost:5000", {
+      const newSocket = io(`${process.env.NEXT_PUBLIC_API_BASE_URL}`, {
         query: { userId: user.id },
       });
       console.log("Socket initialized:", newSocket);

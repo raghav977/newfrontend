@@ -25,7 +25,7 @@ export default function ChatComponent({ bookingId, bookingOwnerId, currentUserId
     const fetchBids = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/bids/user/bids?bookingId=${bookingId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/bids/user/bids?bookingId=${bookingId}`,
           { credentials: "include" }
         );
         const data = await res.json();

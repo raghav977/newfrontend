@@ -9,6 +9,9 @@ export default function MapComponent(){
     const [position, setPosition] = useState(null);
 
     const getUserLocation = ()=>{
+        // Only run on client side
+        if (typeof window === 'undefined') return;
+        
         if(navigator.geolocation){
             navigator.geolocation.getCurrentPosition((position)=>{
                 const {latitude, longitude} = position.coords;

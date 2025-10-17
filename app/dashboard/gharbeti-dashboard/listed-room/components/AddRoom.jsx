@@ -69,7 +69,7 @@ export default function AddRoom() {
       formData.append("availability_status", form.availability_status ? "1" : "0");
       formData.append("note", form.note);
 
-      const res = await fetch("http://localhost:5000/api/rooms/create", {
+      const res = await fetch("https://backendwala.onrender.com/api/rooms/create", {
         method: "POST",
         body: formData,
         credentials: "include",

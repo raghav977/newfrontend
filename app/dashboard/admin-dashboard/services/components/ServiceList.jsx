@@ -69,7 +69,7 @@ export default function ServiceList() {
       if (updateService) {
         await dispatch(updateService({ id: editingService.id, name, package_enabled: editPackageEnabled }));
       } else {
-        const response = await fetch("http://localhost:5000/api/admin/service/edit/" + editingService.id, {
+        const response = await fetch("https://backendwala.onrender.com/api/admin/service/edit/" + editingService.id, {
           method: "PUT",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -95,7 +95,7 @@ export default function ServiceList() {
       if (deleteService) {
         await dispatch(deleteService(id));
       } else {
-        await fetch(`http://localhost:5000/api/admin/service/delete/${id}`, { method: "DELETE", credentials: "include" });
+        await fetch(`https://backendwala.onrender.com/api/admin/service/delete/${id}`, { method: "DELETE", credentials: "include" });
       }
       dispatch(fetchServices({ page, limit, search }));
     } catch (err) {

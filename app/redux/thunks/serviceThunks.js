@@ -2,7 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 // public wala--> that no need token or auth
 
-const BASE_URL_PUBLIC = "http://localhost:5000/api/services";
+const BASE_URL_PUBLIC = `${process.env.NEXT_PUBLIC_API_BASE_URL}/services`;
 
 
 export const fetchAllServicesName = createAsyncThunk(
@@ -100,7 +100,7 @@ export const fetchServiceDetailById = createAsyncThunk(
 
 // fetchmyservices ko lagi chai auth token ko jarurat xa yo chai serviceprovider wala ko lagi
 
-const BASE_URL_PROVIDER = "http://localhost:5000/api/services/";
+const BASE_URL_PROVIDER = `${process.env.NEXT_PUBLIC_API_BASE_URL}/services/`;
 
 export const fetchMyServices = createAsyncThunk(
     "services/fetchMyServices",

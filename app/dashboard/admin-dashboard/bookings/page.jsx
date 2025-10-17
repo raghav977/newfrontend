@@ -15,7 +15,7 @@ export default function BookingDetailsPage() {
             setLoading(true);
             setError(null);
             try {
-                const url = new URL("http://localhost:5000/api/booking/getallbookings");
+                const url = new URL("https://backendwala.onrender.com/api/booking/getallbookings");
                 if (status && status !== "all") url.searchParams.set("status", status);
                 const res = await fetch(url.toString(), { credentials: "include" });
                 console.log("Fetch bookings response:", res);

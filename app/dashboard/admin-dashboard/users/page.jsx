@@ -13,7 +13,7 @@ export default function ManageUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5000/api/admin/users/all", { credentials: "include" });
+      const res = await fetch("https://backendwala.onrender.com/api/admin/users/all", { credentials: "include" });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const body = await res.json();
       // expected shape: { status, code, message?, data: { users: [...] } }
@@ -76,7 +76,7 @@ alert("user id is "+user.id)
     setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, blocked: wantBlock } : u)));
 
     try {
-      const endpoint = `http://localhost:5000/api/admin/users/change-status/${user.id}/${verb}`;
+      const endpoint = `https://backendwala.onrender.com/api/admin/users/change-status/${user.id}/${verb}`;
       const res = await fetch(endpoint, {
         method: "POST",
         credentials: "include",

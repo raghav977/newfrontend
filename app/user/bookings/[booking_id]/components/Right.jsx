@@ -19,7 +19,7 @@ export default function RightSide({ bookingId = null }) {
   const handleCancelBooking = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/booking/cancel/${bookingId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/booking/cancel/${bookingId}`,
         {
           credentials: "include",
           method: "POST",
@@ -42,7 +42,7 @@ export default function RightSide({ bookingId = null }) {
   const fetchBookingStatus = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/booking/get-booking-status/${bookingId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/booking/get-booking-status/${bookingId}`,
         { credentials: "include" }
       );
 
@@ -62,7 +62,7 @@ export default function RightSide({ bookingId = null }) {
   const fetchPaymentStatus = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/payments/payment-status/${bookingId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/payment-status/${bookingId}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -101,7 +101,7 @@ const handlePayment = async () => {
     console.log("bookingId:", productId);
     console.log("Customer info:", customer);
     const res = await fetch(
-      `http://localhost:5000/api/payments/initiate-payment/${bookingId}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initiate-payment/${bookingId}`,
       {
         method: "POST",
         credentials: "include",

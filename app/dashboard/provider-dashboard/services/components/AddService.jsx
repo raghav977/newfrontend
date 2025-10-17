@@ -140,6 +140,9 @@ export default function AddService({ open = undefined, onOpenChange = undefined,
 
   // create previews when photos change (handle both File objects and existing URLs)
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     // revoke previous file object URLs
     photoPreviews.forEach((p) => {
       if (p.source === "file") {
@@ -172,6 +175,9 @@ export default function AddService({ open = undefined, onOpenChange = undefined,
 
     setPhotoPreviews(previews);
     return () => {
+      // Only run on client side
+      if (typeof window === 'undefined') return;
+      
       previews.forEach((p) => {
         if (p.source === "file") {
           try {
@@ -271,13 +277,16 @@ export default function AddService({ open = undefined, onOpenChange = undefined,
   }, [newService.description]);
 
   const resetForm = () => {
-    photoPreviews.forEach((p) => {
-      if (p.source === "file") {
-        try {
-          URL.revokeObjectURL(p.url);
-        } catch (e) {}
-      }
-    });
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      photoPreviews.forEach((p) => {
+        if (p.source === "file") {
+          try {
+            URL.revokeObjectURL(p.url);
+          } catch (e) {}
+        }
+      });
+    }
     setNewService({
       category: "",
       description: "",
@@ -360,7 +369,7 @@ export default function AddService({ open = undefined, onOpenChange = undefined,
         const existingPhotos = (newService.photos || []).filter((p) => !(p instanceof File)).map((p) => (typeof p === "object" ? (p.image_path || p.path || p.url || "") : String(p)));
         fd.append("existing_photos", JSON.stringify(existingPhotos));
 
-        const res = await fetch(`http://localhost:5000/api/service-providers/services/${editService.id}`, {
+        const res = await fetch(`https://backendwala.onrender.com/api/service-providers/services/${editService.id}`, {
           method: "PUT",
           credentials: "include",
           body: fd,
@@ -373,7 +382,7 @@ export default function AddService({ open = undefined, onOpenChange = undefined,
         }
         toast.success("Service updated successfully!", { position: "top-center", autoClose: 3000 });
       } else {
-        const res = await fetch("http://localhost:5000/api/services/add", {
+        const res = await fetch("https://backendwala.onrender.com/api/services/add", {
           method: "POST",
           credentials: "include",
           body: fd,

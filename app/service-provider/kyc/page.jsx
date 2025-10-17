@@ -59,7 +59,7 @@ export default function KycPage() {
         formData.append("document_file", documentFile);
       }
 
-      const response = await fetch(`http://localhost:5000/api/kyc/apply?data=${entity}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/kyc/apply?data=${entity}`, {
         method: "POST",
         credentials: "include",
         body: formData,

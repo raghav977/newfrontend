@@ -9,6 +9,9 @@ export default function LeftFilter({ filters, setFilters }) {
   const [customerLocation, setCustomerLocation] = useState(null);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {

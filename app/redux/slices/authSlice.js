@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-// const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL/''}`
-const BASE_URL = "http://localhost:5000/api/users";
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/users`
+// const BASE_URL = "https://backendwala.onrender.com/api/users";
 
 const initialState = {
   user: null,

@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = "http://localhost:5000/api/admin";
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin`;
+
+const PUBLIC_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}`
 
 // =======================
 // Thunks
@@ -12,7 +14,7 @@ export const fetchMyServices = createAsyncThunk(
   async ({limit=4,offset=0}, { rejectWithValue }) => {
     try {
       console.log("Fetching my services with limit:", limit, "and offset:", offset);
-      const response = await fetch(`http://localhost:5000/api/services?limit=${limit}&offset=${offset}`, {
+      const response = await fetch(`${PUBLIC_URL}/services?limit=${limit}&offset=${offset}`, {
         credentials: "include",
       });
       if (!response.ok) {
@@ -36,7 +38,7 @@ export const fetchServiceByStatus = createAsyncThunk(
     console.log("This is status",status)
     try {
       const response = await fetch(
-        `http://localhost:5000/api/admin/service/status?status=${status}&limit=${limit}&offset=${offset}`,
+        `${PUBLIC_URL}/service/status?status=${status}&limit=${limit}&offset=${offset}`,
         {
           credentials: "include",
         }

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import UserDetailModal from "./userdetailModal";
 
 const BASE_URL = "http://localhost:5000";
-const API_URL = "http://localhost:5000/api/admin/kyc";
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/kyc`;
 
 function formatDate(iso) {
   if (!iso) return "N/A";

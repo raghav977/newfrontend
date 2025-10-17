@@ -46,7 +46,7 @@ export default function ServiceProviderSignup() {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/address/provinces");
+        const res = await fetch("https://backendwala.onrender.com/api/address/provinces");
         if (!res.ok) return;
         const json = await res.json();
         console.log("This is json", json);
@@ -68,7 +68,7 @@ export default function ServiceProviderSignup() {
       setPrimaryMunicipal(null);
       if (!primaryProvince) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/address/districts/${primaryProvince}`);
+        const res = await fetch(`https://backendwala.onrender.com/api/address/districts/${primaryProvince}`);
         if (!res.ok) return;
         const json = await res.json();
         const arr = json?.data?.districts ?? [];
@@ -87,7 +87,7 @@ export default function ServiceProviderSignup() {
       setPrimaryMunicipal(null);
       if (!primaryDistrict) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/address/municipals/${primaryDistrict}`);
+        const res = await fetch(`https://backendwala.onrender.com/api/address/municipals/${primaryDistrict}`);
         if (!res.ok) return;
         const json = await res.json();
         const arr = json?.data?.municipals ?? [];
@@ -108,7 +108,7 @@ export default function ServiceProviderSignup() {
       setSecondaryMunicipal(null);
       if (!secondaryProvince) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/address/districts/${secondaryProvince}`);
+        const res = await fetch(`https://backendwala.onrender.com/api/address/districts/${secondaryProvince}`);
         if (!res.ok) return;
         const json = await res.json();
         const arr = json?.data?.districts ?? [];
@@ -127,7 +127,7 @@ export default function ServiceProviderSignup() {
       setSecondaryMunicipal(null);
       if (!secondaryDistrict) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/address/municipals/${secondaryDistrict}`);
+        const res = await fetch(`https://backendwala.onrender.com/api/address/municipals/${secondaryDistrict}`);
         if (!res.ok) return;
         const json = await res.json();
         const arr = json?.data?.municipals ?? [];
@@ -148,7 +148,7 @@ export default function ServiceProviderSignup() {
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/users/request-otp", {
+      const response = await fetch("https://backendwala.onrender.com/api/users/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: contactValue, type: useEmail ? "email" : "phone" }),
@@ -174,7 +174,7 @@ export default function ServiceProviderSignup() {
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/users/verify-otp", {
+      const response = await fetch("https://backendwala.onrender.com/api/users/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: contactValue, otp: otp }),
@@ -282,7 +282,7 @@ export default function ServiceProviderSignup() {
         municipal_code: primaryMunicipal,
       };
 
-      const response = await fetch("http://localhost:5000/api/users/register", {
+      const response = await fetch("https://backendwala.onrender.com/api/users/register", {
         method: "POST",
         credentials: "include",
          headers: { "Content-Type": "application/json" },

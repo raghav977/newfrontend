@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import ServiceProviderDashboard from "@/app/dashboard/provider-dashboard/profile/page";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = `${process.env.RENDER_BASE}`;
 
 export default function Profilpage({ onClose, user }) {
   const [userData, setUserData] = useState(null);

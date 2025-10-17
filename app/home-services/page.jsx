@@ -1,6 +1,8 @@
 import HeaderNavbar from "../landingpagecomponents/components/HeaderNavbar";
 import HomeServicesContent from "./components/HomeServicesContent";
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: "Home Services | UPAAYAX",
   description: "Find local service providers for all your home needs.",

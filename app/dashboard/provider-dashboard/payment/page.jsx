@@ -61,6 +61,9 @@ export default function PaymentSetup() {
   };
 
   const handleCopy = async (value, key) => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     try {
       await navigator.clipboard.writeText(value || "");
       setCopied(key);

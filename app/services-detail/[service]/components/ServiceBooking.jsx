@@ -133,7 +133,7 @@ export default function ServiceBooking({ schedules = [], serviceDetail, user, so
         location: { lat: Number(loc.latitude), lng: Number(loc.longitude) },
       };
 
-      const response = await fetch("http://localhost:5000/api/booking/create", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/booking/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

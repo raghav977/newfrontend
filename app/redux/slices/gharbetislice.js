@@ -1,11 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/room`
+
 // Async thunk to fetch rooms by type
 export const fetchMyRooms = createAsyncThunk(
   "gharbeti/fetchMyRooms",
   async (type = "listed", { rejectWithValue }) => {
     try {
-      const response = await fetch(`http://localhost:3024/room/my-rooms?type=${type}`, {
+      const response = await fetch(`${BASE_URL}/my-rooms?type=${type}`, {
         credentials: "include",
       });
 

@@ -29,7 +29,7 @@ export default function MyBookingsPage() {
     setLoading(true);
     try {
       console.log("Fetching bookings from API...");
-      const res = await fetch("http://localhost:5000/api/bids/user", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bids/user`, {
         credentials: "include",
       });
       const data = await res.json().catch(() => null);

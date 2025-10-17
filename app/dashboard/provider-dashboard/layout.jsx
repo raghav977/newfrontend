@@ -60,7 +60,7 @@ export default function ProviderLayout({ children }) {
     const fetchUser = async () => {
       try {
         const res = await fetch(
-          "http://localhost:5000/api/users/about/service-provider/",
+          "https://backendwala.onrender.com/api/users/about/service-provider/",
           { credentials: "include" }
         );
         const data = await res.json();
@@ -126,7 +126,7 @@ export default function ProviderLayout({ children }) {
   }, [user]);
 
   const handleLogout = async () => {
-    await fetch("http://localhost:5000/api/users/logout", {
+    await fetch("https://backendwala.onrender.com/api/users/logout", {
       credentials: "include",
       method: "POST",
     });
@@ -138,7 +138,10 @@ export default function ProviderLayout({ children }) {
 
 
     setUser(null);
-    window.location.href = "/";
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      window.location.href = "/";
+    }
   };
 
   if (loading)

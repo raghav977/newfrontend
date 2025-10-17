@@ -37,9 +37,12 @@ export default function HeaderNavbar() {
   // Lazy-load profile if redux empty
   useEffect(() => {
     if (reduxUser?.user) return;
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     (async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/users/profile", { credentials: "include" });
+        const res = await fetch("https://backendwala.onrender.com/api/users/profile", { credentials: "include" });
         const data = await res.json();
         const maybeUser = data?.data?.user || data?.data || null;
         if (maybeUser) {
@@ -53,10 +56,14 @@ export default function HeaderNavbar() {
   // Notifications: fetch + socket
   useEffect(() => {
     if (!user) return;
+    // Only run on client side
+    if (typeof window === 'undefined') return;
 
     console.log("Setting up notifications for user:", user.token);
 
     const socket = connectSocketConnection();
+
+    if (!socket) return; // Exit if socket is null (SSR)
 
     console.log("Socket connected in HeaderNavbar:", socket);
     socket.emit("register", { userId: user.id });
@@ -101,7 +108,7 @@ export default function HeaderNavbar() {
     // Fetch offline/DB notifications
     const fetchNotifications = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/notifications?limit=6", { credentials: "include" });
+        const res = await fetch("https://backendwala.onrender.com/api/notifications?limit=6", { credentials: "include" });
         const body = res.ok ? await res.json() : null;
         console.log("Fetched notifications:", body);
         const list = body?.data.data || [];
@@ -122,13 +129,13 @@ export default function HeaderNavbar() {
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
 
-      fetch("http://localhost:5000/api/notifications/mark-read", { method: "POST", credentials: "include" }).catch(() => {});
+      fetch("https://backendwala.onrender.com/api/notifications/mark-read", { method: "POST", credentials: "include" }).catch(() => {});
     }
   };
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/api/users/logout", { credentials: "include", method: "POST" });
+      await fetch("https://backendwala.onrender.com/api/users/logout", { credentials: "include", method: "POST" });
     } finally {
       setUser(null);
       setMenuOpen(false);
@@ -141,6 +148,9 @@ export default function HeaderNavbar() {
 
   // Close dropdown on outside click
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     const onDocClick = (e) => {
       if (joinRef.current && !joinRef.current.contains(e.target)) setJoinOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);

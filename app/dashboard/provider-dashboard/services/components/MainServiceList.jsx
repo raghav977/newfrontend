@@ -56,10 +56,11 @@ const [isEditOpen, setIsEditOpen] = useState(false);
   };
 
   const handleDelete = async (service) => {
+    if (typeof window === 'undefined') return;
     const ok = window.confirm(`Delete service "${service?.Service?.name || "Service"}"? This cannot be undone.`);
     if (!ok) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/service-providers/services/${service.id}`, {
+      const response = await fetch(`https://backendwala.onrender.com/api/service-providers/services/${service.id}`, {
         method: "DELETE",
         credentials: "include",
       });
