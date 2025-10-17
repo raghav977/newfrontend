@@ -142,7 +142,7 @@ export default function ServiceUI() {
   },[dispatch])
 
   return (
-    <div className="p-6">
+    <div className="">
 
       <header className="mb-6">
         <div className="flex items-center justify-between">
@@ -158,7 +158,6 @@ export default function ServiceUI() {
       
 
       <div className="grid gap-4">
-        {services.length === 0 && <p>No services added yet.</p>}
         {services.map(service => (
           <Card key={service.id}>
             <CardHeader>

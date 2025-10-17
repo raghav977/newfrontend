@@ -4,49 +4,61 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+// import { link } from "fs";
 
 const adminNavBar = [
   { name: "Dashboard", link: "/dashboard/admin-dashboard" },
   {
     name:"Bookings",
-    children: [
-      { name: "All Bookings", link: "/dashboard/admin-dashboard/bookings" },
-      { name: "Confirmed Bookings", link: "/dashboard/admin-dashboard/confirmed-bookings" },
-      { name: "Completed Bookings", link: "/dashboard/admin-dashboard/completed-bookings" },
-      { name: "Cancelled Bookings", link: "/dashboard/admin-dashboard/cancelled-bookings" },
-      { name: "Rejected Bookings", link: "/dashboard/admin-dashboard/rejected-bookings" },
-      { name: "Pending Bookings", link: "/dashboard/admin-dashboard/pending-bookings" },
-    ],
+    link:"/dashboard/admin-dashboard/bookings"
+    // children: [
+    //   { name: "All Bookings", link: "/dashboard/admin-dashboard/bookings" },
+    //   { name: "Confirmed Bookings", link: "/dashboard/admin-dashboard/confirmed-bookings" },
+    //   { name: "Completed Bookings", link: "/dashboard/admin-dashboard/completed-bookings" },
+    //   { name: "Cancelled Bookings", link: "/dashboard/admin-dashboard/cancelled-bookings" },
+    //   { name: "Rejected Bookings", link: "/dashboard/admin-dashboard/rejected-bookings" },
+    //   { name: "Pending Bookings", link: "/dashboard/admin-dashboard/pending-bookings" },
+    // ],
   },
   { name: "Manage Users", link: "/dashboard/admin-dashboard/users" },
   {
     name: "Manage KYC",
-    children: [
-      { name: "Approved Kycs", link: "/dashboard/admin-dashboard/approve-kycs" },
-      { name: "Pending Kycs", link: "/dashboard/admin-dashboard/pending-kycs" },
-      { name: "Rejected Kycs", link: "/dashboard/admin-dashboard/rejected-kycs" },
-    ],
+    link:"/dashboard/admin-dashboard/pending-kycs",
+    // children: [
+    //   { name: "Approved Kycs", link: "/dashboard/admin-dashboard/approve-kycs" },
+    //   { name: "Pending Kycs", link: "/dashboard/admin-dashboard/pending-kycs" },
+    //   { name: "Rejected Kycs", link: "/dashboard/admin-dashboard/rejected-kycs" },
+    // ],
   },
   {
     name: "Services",
-    children: [
-      { name: "All Services", link: "/dashboard/admin-dashboard/services" },
-      { name: "Approved Services", link: "/dashboard/admin-dashboard/approve-services" },
-      { name: "Pending Services", link: "/dashboard/admin-dashboard/pending-services" },
-      { name: "Rejected Services", link: "/dashboard/admin-dashboard/rejected-services" },
-    ],
+    link:"/dashboard/admin-dashboard/pending-services",
+    // children: [
+    //   // { name: "All Services", link: "/dashboard/admin-dashboard/pending-services" },
+    //   // { name: "Approved Services", link: "/dashboard/admin-dashboard/approve-services" },
+    //   // { name: "Pending Services", link: "/dashboard/admin-dashboard/pending-services" },
+    //   // { name: "Rejected Services", link: "/dashboard/admin-dashboard/rejected-services" },
+    // ],
   },
   {
     name: "Rooms",
-    children: [
-      { name: "All Rooms", link: "/dashboard/admin-dashboard/rooms" },
-      { name: "Approved Rooms", link: "/dashboard/admin-dashboard/approve-rooms" },
-      { name: "Pending Rooms", link: "/dashboard/admin-dashboard/pending-rooms" },
-      { name: "Rejected Rooms", link: "/dashboard/admin-dashboard/rejected-rooms" },
-    ],
+    link:"/dashboard/admin-dashboard/pending-rooms",
+    // children: [
+    //   { name: "All Rooms", link: "/dashboard/admin-dashboard/rooms" },
+    //   { name: "Approved Rooms", link: "/dashboard/admin-dashboard/approve-rooms" },
+    //   { name: "Pending Rooms", link: "/dashboard/admin-dashboard/pending-rooms" },
+    //   { name: "Rejected Rooms", link: "/dashboard/admin-dashboard/rejected-rooms" },
+    // ],
   },
-  { name: "Manage Categories", link: "/dashboard/admin-dashboard/categories" },
-  { name: "Settings", link: "/dashboard/admin-dashboard/settings" },
+  { name: "Manage Categories", link: "/dashboard/admin-dashboard/services" },
+  { name: "Settings", link: "/dashboard/admin-dashboard/settings" ,
+    children:[
+      {
+        name:"Payment", link:"/dashboard/admin-dashboard/settings/payments"
+      }
+    ]
+  },
+ 
 ];
 
 export default function Sidebar({ user = {} }) {
@@ -69,7 +81,7 @@ export default function Sidebar({ user = {} }) {
           {/* Parent */}
           <div
             className={`flex items-center justify-between py-2 px-4 rounded-lg font-medium cursor-pointer transition-colors duration-300
-              ${isActive ? "bg-green-100 text-green-800 shadow-md" : "text-green-50 hover:bg-green-500"}
+              ${isActive ? "bg-[#039561] text-green-800 shadow-md" : "text-green-50 hover:bg-green-500"}
             `}
           >
             <span>{nav.name}</span>
@@ -130,7 +142,7 @@ export default function Sidebar({ user = {} }) {
   };
 
   return (
-    <aside className="w-72 bg-green-600 text-white flex flex-col py-8 px-6 shadow-lg border-r border-green-500">
+    <aside className="w-72 bg-[#039561] text-white flex flex-col py-8 px-6 shadow-lg border-r border-green-500">
       {/* Profile */}
       <div className="mb-8 flex flex-col items-center justify-center">
         <span className="text-lg font-semibold">{user.email || "Admin User"}</span>

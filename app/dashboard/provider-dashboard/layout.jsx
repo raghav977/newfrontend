@@ -7,6 +7,8 @@ import { fetchMyServices } from "@/app/redux/slices/serviceSlice";
 import { io } from "socket.io-client";
 import { Bell, LogOut } from "lucide-react";
 
+const BACKEND_URL = "http://localhost:5000";
+
 export default function ProviderLayout({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,14 @@ export default function ProviderLayout({ children }) {
     },
     { name: "Profile", link: "/dashboard/provider-dashboard/profile" },
     { name: "Messages", link: "/dashboard/provider-dashboard/messages" },
+    {name:"Payment",link:"/dashboard/provider-dashboard/payment",
+      children:[
+        {
+          name:"Payment History",
+          link:"/dashboard/provider-dashboard/payment/history"
+        }
+      ]
+    },
     {
       name: "Bookings",
       link: "/dashboard/provider-dashboard/bookings",
@@ -57,7 +67,7 @@ export default function ProviderLayout({ children }) {
 
         if (data.status === "success") {
           console.log("data",data)  
-          setUser(data.data.serviceProvider);
+          setUser(data.data);
           console.log("data",data.data)
           setVerified(data.data.serviceProvider.is_verified);
         } else {
@@ -78,6 +88,7 @@ export default function ProviderLayout({ children }) {
   // Socket notifications
   useEffect(() => {
     if (!user) return;
+    console.log("Setting up socket for user", user);
     socketRef.current = io("http://localhost:3024", { withCredentials: true });
     socketRef.current.emit("register", { userId: user.id, role: "provider" });
 
@@ -121,6 +132,11 @@ export default function ProviderLayout({ children }) {
     });
 
 
+    useEffect(()=>{
+      console.log("User",user)
+    },[user])
+
+
     setUser(null);
     window.location.href = "/";
   };
@@ -133,11 +149,11 @@ export default function ProviderLayout({ children }) {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-72 bg-green-600 flex flex-col text-white shadow-lg">
+      <aside className="w-72 bg-[#039561] flex flex-col text-white shadow-lg">
         {/* Profile */}
         <div className="p-6 border-b border-green-500 flex items-center gap-3">
           <img
-            src={user.profileImage || "/placeholder.svg?height=48&width=48&query=profile"}
+            src={`${BACKEND_URL}${user.serviceProvider.User.profile_picture || "/placeholder.svg?height=48&width=48&query=profile"}`}
             alt="Profile"
             className="w-12 h-12 rounded-full object-cover ring-2 ring-white"
           />

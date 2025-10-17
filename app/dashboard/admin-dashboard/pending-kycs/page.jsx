@@ -42,7 +42,7 @@ export default function PendingKycs(){
     },[kyc])
 
     return(<div>
-        <h1>Hello world This is pending kycs page</h1>
+        {/* <h1>Hello world This is pending kycs page</h1> */}
 
         <DashboardWala total={totalPending}/>
         <AllList data={kyc}/>

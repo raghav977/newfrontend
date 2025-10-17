@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { fetchServicesImageTitleRate } from "@/app/redux/thunks/serviceThunks";
+import Loading from "@/components/Loading"; // import the global Loading component
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -14,11 +15,8 @@ export default function RightResult({ filters }) {
     (state) => state.servicesReal.publicServicesCards
   );
 
-  console.log("THis is filters in RightResult:", filters);
-
-  console.log("Services in RightResult:", services);
-
   const [page, setPage] = useState(0);
+  const [showLoading, setShowLoading] = useState(true); // local loading state
   const pageSize = 6;
 
   useEffect(() => {
@@ -28,14 +26,20 @@ export default function RightResult({ filters }) {
       ...(filters.category && { serviceId: parseInt(filters.category) }),
       ...(filters.priceMin && { minPrice: filters.priceMin }),
       ...(filters.priceMax && { maxPrice: filters.priceMax }),
-        ...(filters.location && {
-      latitude: filters.location.latitude,
-      longitude: filters.location.longitude,
-    }),
-    ...(filters.radius && { radius: filters.radius }),
+      ...(filters.location && {
+        latitude: filters.location.latitude,
+        longitude: filters.location.longitude,
+      }),
+      ...(filters.radius && { radius: filters.radius }),
     };
 
     dispatch(fetchServicesImageTitleRate(params));
+
+    // Force the loading skeleton to show for at least 2 seconds
+    setShowLoading(true);
+    const timer = setTimeout(() => setShowLoading(false), 1000);
+
+    return () => clearTimeout(timer);
   }, [dispatch, filters]);
 
   const totalPages = Math.ceil(services.length / pageSize);
@@ -59,8 +63,8 @@ export default function RightResult({ filters }) {
         Available Services
       </h2>
 
-      {loading ? (
-        <p className="text-green-700 text-center py-16">Loading services...</p>
+      {loading || showLoading ? (
+        <Loading perPage={6} />
       ) : error ? (
         <p className="text-red-600 text-center py-16">Error loading services: {error}</p>
       ) : services.length === 0 ? (

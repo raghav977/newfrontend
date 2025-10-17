@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
+// const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL/''}`
 const BASE_URL = "http://localhost:5000/api/users";
 
 const initialState = {
@@ -64,8 +65,10 @@ export const aboutUser = createAsyncThunk(
   "auth/aboutUser",
   async (_, { rejectWithValue }) => {
     try {
+      console.log("aboutUser thunk called");
       const res = await fetch(`${BASE_URL}/profile`, { credentials: "include" });
       const data = await res.json();
+      console.log("aboutUser response:", data);
       if (!res.ok) return rejectWithValue(data.message || "Failed to fetch user details");
       return data;
     } catch (err) {

@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function PackageContent({ packages = [] }) {
+
+  // alert("From the pacakgeswaals")
   const [expandedIndex, setExpandedIndex] = useState(null);
+
+  console.log("This is package",packages)
 
   const toggleExpand = (index) => {
     setExpandedIndex(expandedIndex === index ? null : index);

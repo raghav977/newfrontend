@@ -28,7 +28,7 @@ export default function ServiceDetailPage() {
   const [schedules, setSchedules] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  // Fetch service detail
+  
 
 useEffect(() => {
   if (navigator.geolocation) {

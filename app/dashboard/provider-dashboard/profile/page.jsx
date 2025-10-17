@@ -1,323 +1,300 @@
 "use client";
-import { useState } from "react";
-import { FaCamera, FaUserEdit, FaListUl, FaRupeeSign, FaCalendarAlt } from "react-icons/fa";
-import KycStatus from "./KycStatus";
+
+import React, { useEffect, useState } from "react";
+import { FaCamera } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-export default function ServiceProviderDashboard() {
-    const [photo, setPhoto] = useState(null);
-    const [about, setAbout] = useState("");
-    const [features, setFeatures] = useState([""]);
-    const [cost, setCost] = useState("");
-    const [schedule, setSchedule] = useState([
-        { day: "Monday", available: false, start: "", end: "" },
-        { day: "Tuesday", available: false, start: "", end: "" },
-        { day: "Wednesday", available: false, start: "", end: "" },
-        { day: "Thursday", available: false, start: "", end: "" },
-        { day: "Friday", available: false, start: "", end: "" },
-        { day: "Saturday", available: false, start: "", end: "" },
-        { day: "Sunday", available: false, start: "", end: "" },
-    ]);
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
+const BASE_URL = "http://localhost:5000";
 
-    // Handle photo upload
-    const handlePhotoChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setPhoto(URL.createObjectURL(e.target.files[0]));
+export default function ServiceProviderDashboard({ initialData }) {
+  const [data, setData] = useState(initialData || null);
+  const [loading, setLoading] = useState(!initialData); // only load if no initialData
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [savingPhoto, setSavingPhoto] = useState(false);
+
+  // fetch logged-in user data only if initialData is not provided (admin passes initialData)
+  useEffect(() => {
+    if (initialData) return;
+
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/users/about/service-provider`, {
+          credentials: "include",
+        });
+        const json = await res.json();
+        if (json.status === "success") {
+          setData(json.data.serviceProvider);
         }
+      } catch (err) {
+        console.error("Failed to fetch:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // Handle features change
-    const handleFeatureChange = (idx, value) => {
-        const updated = [...features];
-        updated[idx] = value;
-        setFeatures(updated);
+    fetchData();
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
     };
+  }, [initialData]);
 
-    // Add new feature
-    const addFeature = () => setFeatures([...features, ""]);
+  // Handle both logged-in user and admin-provided data
+  const user = data?.User || data; // admin passes userDetail directly
+  const municipal = user?.municipal;
+  const district = municipal?.district;
+  const province = district?.province;
 
-    // Remove feature
-    const removeFeature = (idx) => {
-        const updated = features.filter((_, i) => i !== idx);
-        setFeatures(updated);
-    };
+  const kyc = data?.kyc || user?.Kyc; // admin uses Kyc
+  const kycImages = kyc?.kycImage || kyc?.KycImages || [];
 
-    // Handle schedule change
-    const handleScheduleChange = (idx, field, value) => {
-        const updated = [...schedule];
-        updated[idx][field] = value;
-        setSchedule(updated);
-    };
+  const imgUrl = (path) => {
+    if (!path) return null;
+    return path.startsWith("http") ? path : `${BASE_URL}${path}`;
+  };
 
-    // Handle submit
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
-        // Add API call logic here
-        setTimeout(() => {
-            setLoading(false);
-            setShowPreview(true);
-        }, 800);
-    };
+  const handlePhotoChange = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(f);
+    setPhotoPreview(url);
+  };
 
+  const handleSavePhoto = async () => {
+    if (!photoFile) return alert("Select a picture first.");
+    setSavingPhoto(true);
+
+    try {
+      const api = `${BASE_URL}/api/users/update-profile`;
+      const formData = new FormData();
+      formData.append("profile_image", photoFile);
+
+      const res = await fetch(api, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`Server returned ${res.status} ${txt}`);
+      }
+
+      const json = await res.json();
+      const newPath =
+        json?.data?.profile_picture ||
+        json?.data?.user?.profile_picture ||
+        json?.data?.User?.profile_picture ||
+        json?.data?.profile_image ||
+        json?.profile_picture ||
+        null;
+
+      if (newPath) {
+        setData((d) => ({
+          ...d,
+          User: { ...(d?.User || {}), profile_picture: newPath },
+        }));
+      } else if (json?.data?.user) {
+        const returnedUser = json.data.user;
+        setData((d) => ({ ...d, User: { ...d?.User, ...returnedUser } }));
+      } else {
+        throw new Error(json?.message || "Upload succeeded but no profile path returned");
+      }
+
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(null);
+      setPhotoFile(null);
+    } catch (err) {
+      console.error("Failed to upload photo", err);
+      alert("Failed to upload photo: " + (err.message || "Unknown error"));
+    } finally {
+      setSavingPhoto(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-            <Card className="border-green-200 shadow-sm">
-                <CardHeader>
-                    <CardTitle className="text-3xl font-bold text-green-700 flex items-center gap-3">
-                        <FaUserEdit className="text-green-600" />
-                        About You
-                    </CardTitle>
-                    <CardDescription>
-                        Provide details about yourself and the services you offer.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {!showPreview ? (
-                        <form onSubmit={handleSubmit} className="space-y-8">
-                            {/* Photo Upload */}
-                            <div className="space-y-2">
-                                <Label htmlFor="photo" className="text-green-700 font-semibold flex items-center gap-2">
-                                    <FaCamera />
-                                    Service Photo
-                                </Label>
-                                <div className="flex items-center gap-4">
-                                    <Avatar className="w-24 h-24 border-2 border-green-200">
-                                        <AvatarImage src={photo} alt="Service" />
-                                        <AvatarFallback>
-                                            <FaCamera className="text-gray-400" />
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <Input
-                                        id="photo"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handlePhotoChange}
-                                        className="max-w-xs"
-                                    />
-                                </div>
-                            </div>
-                            {/* About Section */}
-                            <div className="space-y-2">
-                                <Label htmlFor="about" className="text-green-700 font-semibold flex items-center gap-2">
-                                    <FaUserEdit />
-                                    About Yourself
-                                </Label>
-                                <Textarea
-                                    id="about"
-                                    rows={5}
-                                    placeholder="Write about yourself and your service..."
-                                    value={about}
-                                    onChange={e => setAbout(e.target.value)}
-                                    required
-                                    className="border-green-200 focus:ring-green-400"
-                                />
-                            </div>
-                            {/* Features */}
-                            <div className="space-y-2">
-                                <Label className="text-green-700 font-semibold flex items-center gap-2">
-                                    <FaListUl />
-                                    Features Provided
-                                </Label>
-                                <div className="space-y-2">
-                                    {features.map((feature, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                            <Input
-                                                type="text"
-                                                placeholder={`Feature ${idx + 1}`}
-                                                value={feature}
-                                                onChange={e => handleFeatureChange(idx, e.target.value)}
-                                                required
-                                                className="border-green-200"
-                                            />
-                                            {features.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="destructive"
-                                                    size="icon"
-                                                    onClick={() => removeFeature(idx)}
-                                                >
-                                                    ×
-                                                </Button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="mt-2 border-green-200 text-green-700"
-                                    onClick={addFeature}
-                                >
-                                    + Add Feature
-                                </Button>
-                            </div>
-                            {/* Cost */}
-                            <div className="space-y-2">
-                                <Label htmlFor="cost" className="text-green-700 font-semibold flex items-center gap-2">
-                                    <FaRupeeSign />
-                                    Service Cost
-                                </Label>
-                                <Input
-                                    id="cost"
-                                    type="number"
-                                    placeholder="Enter cost (in INR)"
-                                    value={cost}
-                                    onChange={e => setCost(e.target.value)}
-                                    required
-                                    min={0}
-                                    className="border-green-200"
-                                />
-                            </div>
-                            {/* Schedule */}
-                            <div className="space-y-4">
-                                <Label className="text-green-700 font-semibold flex items-center gap-2">
-                                    <FaCalendarAlt />
-                                    Weekly Schedule
-                                </Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {schedule.map((slot, idx) => (
-                                        <Card key={slot.day} className="p-4 border-green-100">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <Label htmlFor={`available-${idx}`} className="font-semibold text-green-700">{slot.day}</Label>
-                                                <Switch
-                                                    id={`available-${idx}`}
-                                                    checked={slot.available}
-                                                    onCheckedChange={checked =>
-                                                        handleScheduleChange(idx, "available", checked)
-                                                    }
-                                                />
-                                            </div>
-                                            {slot.available && (
-                                                <div className="flex items-center gap-2">
-                                                    <Input
-                                                        type="time"
-                                                        value={slot.start}
-                                                        onChange={e =>
-                                                            handleScheduleChange(idx, "start", e.target.value)
-                                                        }
-                                                        className="border-green-200"
-                                                        required
-                                                    />
-                                                    <span className="text-gray-500">to</span>
-                                                    <Input
-                                                        type="time"
-                                                        value={slot.end}
-                                                        onChange={e =>
-                                                            handleScheduleChange(idx, "end", e.target.value)
-                                                        }
-                                                        className="border-green-200"
-                                                        required
-                                                    />
-                                                </div>
-                                            )}
-                                        </Card>
-                                    ))}
-                                </div>
-                            </div>
-                            {error && (
-                                <p className="text-red-500 text-sm">{error}</p>
-                            )}
-                            <Button
-                                type="submit"
-                                className="w-full bg-green-600 hover:bg-green-700"
-                                disabled={loading}
-                            >
-                                {loading ? "Saving..." : "Save & Preview"}
-                            </Button>
-                        </form>
-                    ) : (
-                        // Customer Preview
-                        <div className="space-y-8">
-                             <div className="flex justify-end">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowPreview(false)}
-                                >
-                                    Edit Details
-                                </Button>
-                            </div>
-                            <div className="flex flex-col sm:flex-row items-center gap-8">
-                                <Avatar className="w-32 h-32 border-4 border-green-200">
-                                    <AvatarImage src={photo} alt="Service" />
-                                    <AvatarFallback>
-                                        <FaCamera className="text-gray-400" />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-2 text-center sm:text-left">
-                                    <h2 className="text-3xl font-bold text-green-800">Service Provider Profile</h2>
-                                    <p className="text-gray-600">This is how customers will see your profile.</p>
-                                </div>
-                            </div>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-green-700">About</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-gray-700">{about}</p>
-                                </CardContent>
-                            </Card>
-
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-green-700">Features</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex flex-wrap gap-2">
-                                    {features.filter(f => f.trim()).map((feature, idx) => (
-                                        <Badge key={idx} variant="secondary" className="text-green-800 bg-green-100">{feature}</Badge>
-                                    ))}
-                                </CardContent>
-                            </Card>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-green-700">Service Cost</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-green-800 text-3xl font-bold">
-                                            ₹ {cost}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-green-700">Available Schedule</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ul className="space-y-2">
-                                        {schedule.filter(s => s.available).map((slot, idx) => (
-                                            <li key={idx} className="flex justify-between items-center p-2 bg-green-50 rounded-md">
-                                                <span className="font-semibold">{slot.day}</span>
-                                                <span className="text-green-800">{slot.start} - {slot.end}</span>
-                                            </li>
-                                        ))}
-                                        </ul>
-                                        {schedule.filter(s => s.available).length === 0 && (
-                                            <p className="text-gray-500">No schedule available.</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-            <div className="mt-8">
-                <KycStatus/>
-            </div>
-        </div>
+      <div className="p-10 text-center text-gray-500 text-lg">
+        Loading service provider info...
+      </div>
     );
+  }
+
+  if (!data) {
+    return (
+      <div className="p-10 text-center text-red-500 text-lg">
+        Failed to load service provider data.
+      </div>
+    );
+  }
+
+  return (
+    <div className="">
+      <div className="bg-white border rounded-2xl shadow-md p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b pb-4 mb-6">
+          <h2 className="text-lg font-semibold">Service Provider Profile</h2>
+          <Button className="bg-green-600">Update KYC</Button>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Avatar Section */}
+          <div className="w-full md:w-1/4 flex flex-col items-center">
+            <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-green-100 shadow-sm">
+              <img
+                src={photoPreview || imgUrl(user?.profile_picture) || "/images/default-profile.jpg"}
+                alt={user?.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="mt-3 text-center">
+              <div className="font-semibold">{user?.name || user?.username}</div>
+              <div className="text-sm text-gray-500">{user?.email}</div>
+            </div>
+
+            {/* Only allow photo change if logged-in user */}
+            {!initialData && (
+              <label className="mt-4 text-sm text-gray-600 flex items-center gap-2 cursor-pointer">
+                <FaCamera />
+                <span>Change photo</span>
+                <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+              </label>
+            )}
+
+            {photoFile && (
+              <div className="mt-2 flex gap-2">
+                <Button onClick={handleSavePhoto} disabled={savingPhoto}>
+                  {savingPhoto ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    if (photoPreview) URL.revokeObjectURL(photoPreview);
+                    setPhotoPreview(null);
+                    setPhotoFile(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Info Section */}
+          <div className="flex-1 space-y-6">
+            {/* User Info */}
+            <div>
+              <h3 className="text-xl font-semibold mb-2">User Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Info label="Username" value={user?.username} />
+                <Info label="Email" value={user?.email} />
+                <Info label="Phone" value={user?.phone_number || "N/A"} />
+                <Info label="Active" value={user?.is_active ? "Yes" : "No"} />
+                <Info
+                  label="Joined"
+                  value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                />
+              </div>
+            </div>
+
+            {/* Location Info */}
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Location Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Info
+                  label="Municipality"
+                  value={`${municipal?.name_en || "N/A"} (${municipal?.name_np || ""})`}
+                />
+                <Info
+                  label="District"
+                  value={`${district?.name_en || "N/A"} (${district?.name_np || ""})`}
+                />
+                <Info
+                  label="Province"
+                  value={`${province?.name_en || "N/A"} (${province?.name_np || ""})`}
+                />
+              </div>
+            </div>
+
+            {/* Provider Info */}
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Provider Status</h3>
+              <div className="flex items-center gap-3">
+                <Badge
+                  className={`${
+                    data?.is_verified
+                      ? "bg-green-100 text-green-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {data?.is_verified ? "Verified" : "Not Verified"}
+                </Badge>
+                {data?.is_blocked && (
+                  <Badge className="bg-red-100 text-red-700">Blocked</Badge>
+                )}
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                ID: #{data?.id} • Created:{" "}
+                {new Date(data?.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+
+            {/* KYC Info */}
+            <div>
+              <h3 className="text-xl font-semibold mb-2">KYC Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Info label="Document Type" value={kyc?.document_type || "N/A"} />
+                <Info label="Status" value={kyc?.status || "N/A"} />
+                {kyc?.rejection_reason && (
+                  <Info label="Rejection Reason" value={kyc.rejection_reason} />
+                )}
+                <Info
+                  label="Verified At"
+                  value={kyc?.verified_at ? new Date(kyc.verified_at).toLocaleString() : "N/A"}
+                />
+              </div>
+
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold mb-2">Documents</h4>
+                <div className="flex gap-3 flex-wrap">
+                  {kycImages.length === 0 ? (
+                    <div className="text-sm text-gray-500">No documents submitted</div>
+                  ) : (
+                    kycImages.map((img, i) => (
+                      <a
+                        key={i}
+                        href={imgUrl(img.image_path)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-40 h-28 block overflow-hidden rounded-md border"
+                      >
+                        <img
+                          src={imgUrl(img.image_path)}
+                          alt={img.image_type}
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <div className="p-4 bg-gray-50 rounded-lg">
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="font-medium">{value || "N/A"}</div>
+    </div>
+  );
 }

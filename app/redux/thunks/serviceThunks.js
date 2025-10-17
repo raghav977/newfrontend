@@ -67,7 +67,7 @@ export const fetchServicesImageTitleRate = createAsyncThunk(
 
 
 
-// service detail wala ko lagi
+
 
 export const fetchServiceDetailById = createAsyncThunk(
   "services/fetchServiceDetailById",

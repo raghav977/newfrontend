@@ -95,7 +95,7 @@ alert("user id is "+user.id)
   };
 
   return (
-    <div className="p-6">
+    <div className="">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Manage Users</h1>
