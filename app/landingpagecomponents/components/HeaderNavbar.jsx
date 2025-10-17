@@ -1,109 +1,141 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Briefcase, Bell, LogOut, Home, Menu, X } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Bell, BellRing, Check, Briefcase, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { aboutUser } from "@/app/redux/slices/authSlice";
-import { motion, AnimatePresence } from "framer-motion";
-
-// import { useState } from "react";
-// import { Briefcase, Bell, LogOut, Home, Menu, X } from "lucide-react";
-// import { Button } from "@/components/ui/button";
-// import Link from "next/link";
-// import { useRouter } from "next/navigation";
+import { connectSocket, connectSocketConnection, getSocket } from "@/helper/socket";
 
 export default function HeaderNavbar() {
   const reduxUser = useSelector((state) => state.auth.user);
-  console.log("This is redux user in header",reduxUser)
+
+  console.log("Redux user in HeaderNavbar:", reduxUser);
   const dispatch = useDispatch();
   const [user, setUser] = useState(null);
-  const [notifications, setNotifications] = useState([]);
   const router = useRouter();
-  // Default links
-  // Config-driven navbar links
-  const navConfig = [
-    { name: "Home", link: "/" },
-    { name: "Home Services", link: "/home-services" },
-    { name: "How it works", link: "/how-it-works" },
-    { name: "Find a Room", link: "/messages" },
-    // Role-based links
-    {
-      name: "Be Service Provider",
-      show: (user) => !!user,
-      onClick: (user, router) => {
-        if (user?.service_provider_id) {
-          router.push("/dashboard/provider-dashboard");
-        } else {
-          router.push("/service-provider/kyc");
-        }
-      },
-    },
-    {
-      name: "Provider Dashboard",
-      link: "/dashboard/provider-dashboard",
-      show: (user) => !!user?.service_provider_id,
-    },
-    {
-      name: "Be Gharbeti",
-      show: (user) => !!user,
-      onClick: (user, router) => {
-        if (user?.gharbeti_id) {
-          router.push("/dashboard/gharbeti-dashboard");
-        } else {
-          router.push("/gharbeti/kyc");
-        }
-      },
-    },
-    {
-      name: "Gharbeti Dashboard",
-      link: "/dashboard/gharbeti-dashboard",
-      show: (user) => !!user?.gharbeti_id,
-    },
-    {
-      name: "My Bookings",
-      link: "/user/bookings",
-      show: (user) => !!user,
-    },
-    // Add more links here as needed
-  ];
 
-  // Sync local user with redux
+  // Dropdowns
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const joinRef = useRef(null);
+
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Sync local user
   useEffect(() => {
+    console.log("Redux user changed:", reduxUser);
     if (reduxUser?.user) setUser(reduxUser);
     else setUser(null);
   }, [reduxUser]);
 
-  // Lazy-load profile if redux is empty
+  // Lazy-load profile if redux empty
   useEffect(() => {
     if (reduxUser?.user) return;
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     (async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/users/profile", {
-          credentials: "include",
-        });
+        const res = await fetch("https://backendwala.onrender.com/api/users/profile", { credentials: "include" });
         const data = await res.json();
         const maybeUser = data?.data?.user || data?.data || null;
         if (maybeUser) {
           setUser(maybeUser);
           dispatch(aboutUser());
         }
-      } catch {
-        setUser(null);
-      }
+      } catch {}
     })();
   }, [reduxUser, dispatch]);
 
+  // Notifications: fetch + socket
+  useEffect(() => {
+    if (!user) return;
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    console.log("Setting up notifications for user:", user.token);
+
+    const socket = connectSocketConnection();
+
+    if (!socket) return; // Exit if socket is null (SSR)
+
+    console.log("Socket connected in HeaderNavbar:", socket);
+    socket.emit("register", { userId: user.id });
+
+
+    const handleNewNotification = (notif) => {
+      console.log("Received new notification:", notif);
+      setNotifications((prev) => [notif, ...prev].slice(0, 20));
+      setUnreadCount((c) => c + 1);
+    };
+
+    const handleBookingCreated = (payload) => {
+      console.log("Received booking-created event:", payload);
+      const notif = {
+        id: payload.id || `booking-${Date.now()}`,
+        title: payload.title || "Booking Update",
+        message: payload.message || `Booking #${payload.id || ""} created/updated`,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [notif, ...prev].slice(0, 20));
+      setUnreadCount((c) => c + 1);
+    };
+
+
+    const handleNewBid = (bid) => {
+      const notif = {
+        id: bid.id || `bid-${Date.now()}`,
+        title: "New Bid",
+        message: `New bid of Rs.${bid.bidAmount || bid.amount || ""}`,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [notif, ...prev].slice(0, 20));
+      setUnreadCount((c) => c + 1);
+    };
+
+
+    // Live notifications
+     socket.on("new-notification", handleNewNotification);
+    socket.on("booking-created", handleBookingCreated);
+    socket.on("new-bid", handleNewBid);
+
+    // Fetch offline/DB notifications
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("https://backendwala.onrender.com/api/notifications?limit=6", { credentials: "include" });
+        const body = res.ok ? await res.json() : null;
+        console.log("Fetched notifications:", body);
+        const list = body?.data.data || [];
+        console.log("Notification list:", list);
+        setNotifications(list.slice(0, 6));
+        setUnreadCount(list.filter((n) => !n.isRead).length);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+  const toggleNotif = () => {
+    setNotifOpen((v) => !v);
+    if (unreadCount > 0) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+
+      fetch("https://backendwala.onrender.com/api/notifications/mark-read", { method: "POST", credentials: "include" }).catch(() => {});
+    }
+  };
+
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/api/users/logout", {
-        credentials: "include",
-        method: "POST",
-      });
-    } catch (err) {
-      // ignore
+      await fetch("https://backendwala.onrender.com/api/users/logout", { credentials: "include", method: "POST" });
     } finally {
       setUser(null);
       setMenuOpen(false);
@@ -111,15 +143,32 @@ export default function HeaderNavbar() {
     }
   };
 
-  const navigateAndClose = (href) => {
-    setMenuOpen(false);
-    router.push(href);
-  };
+  const handleBecomeProvider = () => router.push(user?.service_provider_id ? "/dashboard/provider-dashboard" : "/service-provider/kyc?name=service_provider");
+  const handleBecomeGharbeti = () => router.push(user?.gharbeti_id ? "/dashboard/gharbeti-dashboard" : "/service-provider/kyc?name=gharbeti");
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Close dropdown on outside click
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
+    const onDocClick = (e) => {
+      if (joinRef.current && !joinRef.current.contains(e.target)) setJoinOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  const navConfig = [
+    { name: "Home", link: "/" },
+    { name: "Home Services", link: "/home-services" },
+    { name: "How it works", link: "/how-it-works" },
+    { name: "Find a Room", link: "/messages" },
+    { name: "My Bookings", link: "/user/bookings", show: (u) => !!u },
+  ];
 
   return (
-    <header className="w-full z-50 border-b bg-white/90 backdrop-blur-lg shadow-sm px-4 md:px-8">
+    <header className="w-full relative z-[9999] border-b bg-white/90 backdrop-blur-lg shadow-sm px-4 md:px-8">
       <div className="max-w-7xl mx-auto flex items-center h-16 justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
@@ -130,116 +179,102 @@ export default function HeaderNavbar() {
             Kaam Chaa
           </span>
         </Link>
-        {/* Desktop Nav links */}
+
+        {/* Desktop Nav */}
         <nav className="hidden md:flex flex-1 items-center justify-center gap-8">
-          {navConfig.filter(item => !item.show || item.show(user)).map((item) => (
-            item.onClick ? (
-              <button
-                key={item.name}
-                onClick={() => item.onClick(user, router)}
-                className="text-green-700 font-semibold hover:text-emerald-700 text-base bg-transparent border-none cursor-pointer"
-                style={{ padding: 0, background: "none" }}
-              >
-                {item.name}
-              </button>
-            ) : (
-              <Link key={item.name} href={item.link} className="text-gray-800 font-medium hover:text-green-700 text-base">
-                {item.name}
-              </Link>
-            )
+          {navConfig.filter((item) => !item.show || item.show(user)).map((item) => (
+            <Link key={item.name} href={item.link} className="text-gray-800 font-medium hover:text-green-700 text-base">{item.name}</Link>
           ))}
         </nav>
-        {/* Desktop Auth actions */}
+
+        {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-3">
           {!user ? (
             <>
-              <Link href="/auth/login">
-                <Button variant="ghost" className="text-gray-700 hover:text-green-700 font-semibold">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold shadow">
-                  Register
-                </Button>
-              </Link>
+              <Link href="/auth/login"><Button variant="ghost" className="text-gray-700 hover:text-green-700 font-semibold">Sign In</Button></Link>
+              <Link href="/auth/register"><Button className="bg-white border text-green-700 font-semibold hover:bg-green-50">Register</Button></Link>
             </>
           ) : (
             <>
-              <Button variant="ghost" className="p-2" aria-label="Notifications">
-                <Bell className="h-5 w-5 text-gray-700" />
-                {notifications.length > 0 && (
-                  <span className="ml-2 inline-block bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                    {notifications.length}
-                  </span>
+              {/* Notifications */}
+              <div className="relative" ref={notifRef}>
+                <button onClick={toggleNotif} className="relative p-2 rounded hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-600">
+                  {unreadCount > 0 ? <BellRing className="h-5 w-5 text-green-700" /> : <Bell className="h-5 w-5 text-slate-700" />}
+                  {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white border rounded shadow-lg z-50">
+                    <div className="px-3 py-2 border-b flex items-center justify-between">
+                      <div className="text-sm font-medium">Notifications</div>
+                      <button onClick={() => { setNotifications([]); setUnreadCount(0); fetch("/api/notifications/mark-read", { method: "POST", credentials: "include" }).catch(() => {}); }} className="text-xs text-green-600 hover:underline">Mark all read</button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notifications.length === 0 ? <div className="p-4 text-sm text-slate-500">No notifications</div> :
+                        notifications.map((n) => (
+                          <div key={n.id} className={`px-3 py-3 border-b hover:bg-green-50 transition flex items-start gap-2 ${!n.isRead ? "bg-emerald-50" : ""}`}>
+                            <div className="pt-1"><Check className="w-4 h-4 text-green-600 opacity-70" /></div>
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-slate-800">{n.title || n.message}</div>
+                              <div className="text-xs text-slate-500 mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ""}</div>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                    <div className="p-2 text-center">
+                      <Link href="/notifications" onClick={() => setNotifOpen(false)} className="text-sm text-green-600 hover:underline">View all</Link>
+                    </div>
+                  </div>
                 )}
-              </Button>
-              <Button className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow" onClick={handleLogout}>
-                <LogOut className="h-5 w-5 mr-2" /> Logout
-              </Button>
+              </div>
+
+              {/* Sell Services */}
+              <div className="relative" ref={joinRef}>
+                <Button onClick={() => setJoinOpen((v) => !v)} className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow">Sell Your Services <ChevronDown className="h-4 w-4" /></Button>
+                {joinOpen && (
+                  <div className="absolute left-0 mt-2 w-48 bg-white border rounded shadow-lg z-50">
+                    <button onClick={handleBecomeProvider} className="w-full text-left px-4 py-2 hover:bg-green-50">Be a Provider</button>
+                    <button onClick={handleBecomeGharbeti} className="w-full text-left px-4 py-2 hover:bg-green-50">Be a Gharbeti</button>
+                  </div>
+                )}
+              </div>
+
+              <Button onClick={handleLogout} variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 font-semibold">Logout</Button>
             </>
           )}
         </div>
-        {/* Mobile Hamburger */}
-        <button
-          className="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-600"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Open menu"
-        >
+
+        {/* Mobile Menu Button */}
+        <button className="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-600" onClick={() => setMenuOpen((v) => !v)} aria-label="Open menu">
           {menuOpen ? <X className="h-6 w-6 text-green-700" /> : <Menu className="h-6 w-6 text-green-700" />}
         </button>
       </div>
+
       {/* Mobile Dropdown */}
       {menuOpen && (
         <div className="md:hidden absolute left-0 top-16 w-full bg-white/95 backdrop-blur-lg shadow-lg z-50 border-t">
           <nav className="flex flex-col gap-2 py-4 px-6">
-            {navConfig.filter(item => !item.show || item.show(user)).map((item) => (
-              item.onClick ? (
-                <button
-                  key={item.name}
-                  onClick={() => { item.onClick(user, router); setMenuOpen(false); }}
-                  className="text-green-700 font-semibold hover:text-emerald-700 text-base text-left py-2 border-b border-gray-100 bg-transparent border-none cursor-pointer"
-                  style={{ padding: 0, background: "none" }}
-                >
-                  {item.name}
-                </button>
-              ) : (
-                <Link key={item.name} href={item.link} className="text-gray-800 font-medium hover:text-green-700 text-base py-2 border-b border-gray-100">
-                  {item.name}
-                </Link>
-              )
+            {navConfig.filter((item) => !item.show || item.show(user)).map((item) => (
+              <Link key={item.name} href={item.link} onClick={() => setMenuOpen(false)} className="text-gray-800 font-medium hover:text-green-700 text-base py-2 border-b border-gray-100">{item.name}</Link>
             ))}
-          </nav>
-          <div className="flex flex-col gap-2 px-6 pb-4">
-            {!user ? (
+            {user && (
               <>
-                <Link href="/auth/login" onClick={() => setMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/auth/register" onClick={() => setMenuOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white">
-                    Register
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" className="w-full justify-start">
-                  <Bell className="h-5 w-5 text-gray-700 mr-2" /> Notifications
-                  {notifications.length > 0 && (
-                    <span className="ml-2 inline-block bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                      {notifications.length}
-                    </span>
-                  )}
-                </Button>
-                <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white" onClick={() => { handleLogout(); setMenuOpen(false); }}>
-                  <LogOut className="h-5 w-5 mr-2" /> Logout
-                </Button>
+                <div className="pt-2">
+                  <div className="text-sm font-semibold mb-1">Sell Your Services</div>
+                  <button onClick={() => { setMenuOpen(false); handleBecomeProvider(); }} className="w-full text-left px-3 py-2 hover:bg-green-50 border-b border-gray-100">Be a Provider</button>
+                  <button onClick={() => { setMenuOpen(false); handleBecomeGharbeti(); }} className="w-full text-left px-3 py-2 hover:bg-green-50">Be a Gharbeti</button>
+                </div>
+                <Link href="/notifications" onClick={() => setMenuOpen(false)} className="px-3 py-2 text-sm border-b border-gray-100">Notifications</Link>
+                <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="w-full text-left px-3 py-2 mt-2 text-red-600 hover:bg-red-50 font-semibold">Logout</button>
               </>
             )}
-          </div>
+            {!user && (
+              <div className="flex flex-col gap-2 px-6 pb-4">
+                <Link href="/auth/login" onClick={() => setMenuOpen(false)}><Button variant="ghost" className="w-full justify-start">Sign In</Button></Link>
+                <Link href="/auth/register" onClick={() => setMenuOpen(false)}><Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white">Register</Button></Link>
+              </div>
+            )}
+          </nav>
         </div>
       )}
     </header>

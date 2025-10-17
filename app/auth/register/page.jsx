@@ -1,6 +1,7 @@
+// ...existing code...
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +21,123 @@ export default function ServiceProviderSignup() {
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     password: "",
-    primary_address: "",
-    secondary_address: "",
-    username:"",
-    name:"",
+    username: "",
+    name: "",
   });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordMessage, setPasswordMessage] = useState("");
+
+  // location state (primary)
+  const [provinces, setProvinces] = useState([]);
+  const [primaryProvince, setPrimaryProvince] = useState(null); // province_code number
+  const [primaryDistricts, setPrimaryDistricts] = useState([]);
+  const [primaryDistrict, setPrimaryDistrict] = useState(null); // district_code number
+  const [primaryMunicipals, setPrimaryMunicipals] = useState([]);
+  const [primaryMunicipal, setPrimaryMunicipal] = useState(null); // municipal_code number
+
+  // location state (secondary)
+  const [secondaryProvince, setSecondaryProvince] = useState(null);
+  const [secondaryDistricts, setSecondaryDistricts] = useState([]);
+  const [secondaryDistrict, setSecondaryDistrict] = useState(null);
+  const [secondaryMunicipals, setSecondaryMunicipals] = useState([]);
+  const [secondaryMunicipal, setSecondaryMunicipal] = useState(null);
+
+  // load provinces on mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const res = await fetch("https://backendwala.onrender.com/api/address/provinces");
+        if (!res.ok) return;
+        const json = await res.json();
+        console.log("This is json", json);
+        const arr = json?.data?.provinces ?? [];
+        setProvinces(arr);
+      } catch (e) {
+        console.debug("Failed to load provinces", e);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // fetch primary districts when province changes
+  useEffect(() => {
+    const load = async () => {
+      setPrimaryDistricts([]);
+      setPrimaryDistrict(null);
+      setPrimaryMunicipals([]);
+      setPrimaryMunicipal(null);
+      if (!primaryProvince) return;
+      try {
+        const res = await fetch(`https://backendwala.onrender.com/api/address/districts/${primaryProvince}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const arr = json?.data?.districts ?? [];
+        setPrimaryDistricts(arr);
+      } catch (e) {
+        console.debug("Failed to load primary districts", e);
+      }
+    };
+    load();
+  }, [primaryProvince]);
+
+  // fetch primary municipals when district changes
+  useEffect(() => {
+    const load = async () => {
+      setPrimaryMunicipals([]);
+      setPrimaryMunicipal(null);
+      if (!primaryDistrict) return;
+      try {
+        const res = await fetch(`https://backendwala.onrender.com/api/address/municipals/${primaryDistrict}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const arr = json?.data?.municipals ?? [];
+        setPrimaryMunicipals(arr);
+      } catch (e) {
+        console.debug("Failed to load primary municipals", e);
+      }
+    };
+    load();
+  }, [primaryDistrict]);
+
+  // fetch secondary districts when province changes
+  useEffect(() => {
+    const load = async () => {
+      setSecondaryDistricts([]);
+      setSecondaryDistrict(null);
+      setSecondaryMunicipals([]);
+      setSecondaryMunicipal(null);
+      if (!secondaryProvince) return;
+      try {
+        const res = await fetch(`https://backendwala.onrender.com/api/address/districts/${secondaryProvince}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const arr = json?.data?.districts ?? [];
+        setSecondaryDistricts(arr);
+      } catch (e) {
+        console.debug("Failed to load secondary districts", e);
+      }
+    };
+    load();
+  }, [secondaryProvince]);
+
+  // fetch secondary municipals when district changes
+  useEffect(() => {
+    const load = async () => {
+      setSecondaryMunicipals([]);
+      setSecondaryMunicipal(null);
+      if (!secondaryDistrict) return;
+      try {
+        const res = await fetch(`https://backendwala.onrender.com/api/address/municipals/${secondaryDistrict}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const arr = json?.data?.municipals ?? [];
+        setSecondaryMunicipals(arr);
+      } catch (e) {
+        console.debug("Failed to load secondary municipals", e);
+      }
+    };
+    load();
+  }, [secondaryDistrict]);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -37,7 +148,7 @@ export default function ServiceProviderSignup() {
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/users/request-otp", {
+      const response = await fetch("https://backendwala.onrender.com/api/users/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: contactValue, type: useEmail ? "email" : "phone" }),
@@ -63,7 +174,7 @@ export default function ServiceProviderSignup() {
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/users/verify-otp", {
+      const response = await fetch("https://backendwala.onrender.com/api/users/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: contactValue, otp: otp }),
@@ -119,6 +230,18 @@ export default function ServiceProviderSignup() {
     }
   };
 
+  const buildLocationString = (provinceCode, districtCode, municipalCode, provincesArr, districtsArr, municipalsArr) => {
+    if (!provinceCode) return "";
+    const prov = provincesArr.find((p) => Number(p.province_code) === Number(provinceCode));
+    const dist = districtsArr.find((d) => Number(d.district_code) === Number(districtCode));
+    const mun = municipalsArr.find((m) => Number(m.municipal_code) === Number(municipalCode));
+    const parts = [];
+    if (prov) parts.push(prov.name_en || prov.name_np || `Province ${provinceCode}`);
+    if (dist) parts.push(dist.name_en || dist.name_np || `District ${districtCode}`);
+    if (mun) parts.push(mun.name_en || mun.name_np || `Municipal ${municipalCode}`);
+    return parts.join(" / ");
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (passwordStrength < 3) {
@@ -128,21 +251,52 @@ export default function ServiceProviderSignup() {
     setError("");
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/users/register", {
+      const primary_address = buildLocationString(
+        primaryProvince,
+        primaryDistrict,
+        primaryMunicipal,
+        provinces,
+        primaryDistricts,
+        primaryMunicipals
+      );
+      const secondary_address = buildLocationString(
+        secondaryProvince,
+        secondaryDistrict,
+        secondaryMunicipal,
+        provinces,
+        secondaryDistricts,
+        secondaryMunicipals
+      );
+
+      // API now expects municipal_code (use primaryMunicipal)
+      if (!primaryMunicipal) {
+        setError("Please select your primary municipality.");
+        return;
+      }
+
+      const payload = {
+        name: formData.name,
+        email: contactValue,
+        username: formData.username,
+        password: formData.password,
+        municipal_code: primaryMunicipal,
+      };
+
+      const response = await fetch("https://backendwala.onrender.com/api/users/register", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: contactValue, ...formData }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Registration failed");
-      setLoading(false);
-      router.push("/auth/login");
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(payload),
+       });
+       const data = await response.json();
+       if (!response.ok) throw new Error(data.message || "Registration failed");
+       setLoading(false);
+       router.push("/auth/login");
+     } catch (err) {
+       setError(err.message);
+       setLoading(false);
+     }
+   };
 
   // ---------- Render ----------
   return (
@@ -307,38 +461,102 @@ export default function ServiceProviderSignup() {
                   )}
                 </div>
 
-                {/* Primary Address */}
+                {/* Primary Location (province -> district -> municipal) */}
                 <div>
-                  <label className="block text-sm font-semibold text-green-700 mb-2">Primary Address</label>
-                  <div className="flex items-center border border-green-200 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-green-400 bg-white">
-                    <FaMapMarkerAlt className="text-green-400 mr-2" />
-                    <Input
-                      type="text"
-                      name="primary_address"
-                      value={formData.primary_address}
-                      onChange={handleChange}
-                      placeholder="Enter your primary address"
+                  <label className="block text-sm font-semibold text-green-700 mb-2">Primary Location</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    <select
+                      value={primaryProvince ?? ""}
+                      onChange={(e) => setPrimaryProvince(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full border border-green-200 rounded-lg px-3 py-2 bg-white"
+                      disabled={provinces.length === 0 || loading}
                       required
-                      className="w-full outline-none bg-transparent border-none shadow-none"
-                      disabled={loading}
-                    />
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map((p) => (
+                        <option key={p.province_code} value={p.province_code}>
+                          {p.name_en}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={primaryDistrict ?? ""}
+                      onChange={(e) => setPrimaryDistrict(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full border border-green-200 rounded-lg px-3 py-2 bg-white"
+                      disabled={!primaryProvince || primaryDistricts.length === 0 || loading}
+                      required
+                    >
+                      <option value="">Select District</option>
+                      {primaryDistricts.map((d) => (
+                        <option key={d.district_code} value={d.district_code}>
+                          {d.name_en}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={primaryMunicipal ?? ""}
+                      onChange={(e) => setPrimaryMunicipal(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full border border-green-200 rounded-lg px-3 py-2 bg-white"
+                      disabled={!primaryDistrict || primaryMunicipals.length === 0 || loading}
+                      required
+                    >
+                      <option value="">Select Municipality</option>
+                      {primaryMunicipals.map((m) => (
+                        <option key={m.municipal_code} value={m.municipal_code}>
+                          {m.name_en}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* Secondary Address */}
+                {/* Secondary Location (optional) */}
                 <div>
-                  <label className="block text-sm font-semibold text-green-700 mb-2">Secondary Address</label>
-                  <div className="flex items-center border border-green-200 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-green-400 bg-white">
-                    <FaMapMarkerAlt className="text-green-400 mr-2" />
-                    <Input
-                      type="text"
-                      name="secondary_address"
-                      value={formData.secondary_address}
-                      onChange={handleChange}
-                      placeholder="Enter your secondary address"
-                      className="w-full outline-none bg-transparent border-none shadow-none"
-                      disabled={loading}
-                    />
+                  <label className="block text-sm font-semibold text-green-700 mb-2">Secondary Location (optional)</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    <select
+                      value={secondaryProvince ?? ""}
+                      onChange={(e) => setSecondaryProvince(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full border border-green-200 rounded-lg px-3 py-2 bg-white"
+                      disabled={provinces.length === 0 || loading}
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map((p) => (
+                        <option key={p.province_code} value={p.province_code}>
+                          {p.name_en}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={secondaryDistrict ?? ""}
+                      onChange={(e) => setSecondaryDistrict(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full border border-green-200 rounded-lg px-3 py-2 bg-white"
+                      disabled={!secondaryProvince || secondaryDistricts.length === 0 || loading}
+                    >
+                      <option value="">Select District</option>
+                      {secondaryDistricts.map((d) => (
+                        <option key={d.district_code} value={d.district_code}>
+                          {d.name_en}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={secondaryMunicipal ?? ""}
+                      onChange={(e) => setSecondaryMunicipal(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full border border-green-200 rounded-lg px-3 py-2 bg-white"
+                      disabled={!secondaryDistrict || secondaryMunicipals.length === 0 || loading}
+                    >
+                      <option value="">Select Municipality</option>
+                      {secondaryMunicipals.map((m) => (
+                        <option key={m.municipal_code} value={m.municipal_code}>
+                          {m.name_en}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

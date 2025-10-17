@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { FaRegTimesCircle } from 'react-icons/fa';
 
 const BASE_URL = 'http://localhost:3024/uploads/';
-const API_BASE = 'http://localhost:5000/api/admin/kyc';
+const API_BASE = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/kyc`;
 
 export default function ApproveKycList() {
   const [kycData, setKycData] = useState([]);

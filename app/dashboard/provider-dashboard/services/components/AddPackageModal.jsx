@@ -37,7 +37,7 @@ export default function AddPackageModal({ open, onClose, serviceProviderServiceI
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/packages/create", {
+      const response = await fetch("https://backendwala.onrender.com/api/packages/create", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

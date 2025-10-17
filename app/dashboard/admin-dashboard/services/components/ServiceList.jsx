@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchServices,
@@ -19,28 +19,35 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Plus, Check, X } from "lucide-react";
 
 export default function ServiceList() {
   const dispatch = useDispatch();
-  const { list, total, limit, offset, next, previous, loading, error } =
-    useSelector((state) => state.category);
+  const { list = [], total = 0, limit = 10, offset = 0, loading = false, error = null } =
+    useSelector((state) => state.category || {});
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newServiceName, setNewServiceName] = useState("");
+
+  // edit dialog state
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [editName, setEditName] = useState("");
+  const [editPackageEnabled, setEditPackageEnabled] = useState(false);
 
-  // Fetch services whenever page or search changes
   useEffect(() => {
     dispatch(fetchServices({ page, limit, search }));
-  }, [dispatch, page, search]);
+  }, [dispatch, page, search, limit]);
 
   // ---------------- Add Service ---------------- //
   const handleAddService = async () => {
-    if (!newServiceName.trim()) return alert("Service name is required");
-    await dispatch(addService({ name: newServiceName, package_enabled: false }));
+    const name = (newServiceName || "").trim();
+    if (!name) return alert("Service name is required");
+    await dispatch(addService({ name, package_enabled: false }));
     setNewServiceName("");
     setIsAddOpen(false);
     dispatch(fetchServices({ page, limit, search }));
@@ -49,193 +56,210 @@ export default function ServiceList() {
   // ---------------- Edit Service ---------------- //
   const startEdit = (service) => {
     setEditingService(service);
-    setEditName(service.name);
+    setEditName(service.name || "");
+    setEditPackageEnabled(Boolean(service.package_enabled));
+    setIsEditOpen(true);
   };
 
- const handleUpdate = async () => {
-  if (!editName.trim()) return alert("Service name required");
-
-  try {
-    const response = await fetch("http://localhost:5000/api/admin/service/edit/" + editingService.id, {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName, package_enabled: editingService.package_enabled }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to update service");
-    
-    alert("Service updated successfully");
-    dispatch(fetchServices({ page, limit, search }));
-
-    
-     
-  } catch (err) {
-    console.log("Error in handleUpdate:", err);
-    alert("Something went wrong while updating the service.");
-  }
-
-  // Clear editing state
-  setEditingService(null);
-};
-
-
-  // ---------------- Delete Service ---------------- //
-  const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this service?")) {
-      await dispatch(deleteService(id));
+  const handleUpdate = async () => {
+    const name = (editName || "").trim();
+    if (!name) return alert("Service name required");
+    try {
+      // prefer slice action if exists, fallback to direct API
+      if (updateService) {
+        await dispatch(updateService({ id: editingService.id, name, package_enabled: editPackageEnabled }));
+      } else {
+        const response = await fetch("https://backendwala.onrender.com/api/admin/service/edit/" + editingService.id, {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, package_enabled: editPackageEnabled }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || "Failed to update service");
+        alert("Service updated successfully");
+      }
+      setIsEditOpen(false);
+      setEditingService(null);
       dispatch(fetchServices({ page, limit, search }));
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong while updating the service.");
     }
   };
 
-  const totalPages = Math.ceil(total / limit);
+  // ---------------- Delete Service ---------------- //
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this service?")) return;
+    try {
+      if (deleteService) {
+        await dispatch(deleteService(id));
+      } else {
+        await fetch(`https://backendwala.onrender.com/api/admin/service/delete/${id}`, { method: "DELETE", credentials: "include" });
+      }
+      dispatch(fetchServices({ page, limit, search }));
+    } catch (err) {
+      console.error("delete error", err);
+      alert("Delete failed");
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil((total || list.length) / limit));
 
   return (
-    <div className="p-6 space-y-4">
-      {/* Header & Add Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Services</h2>
-
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
-              + Add Service
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Service</DialogTitle>
-              <DialogDescription>
-                Enter service name to add a new service
-              </DialogDescription>
-            </DialogHeader>
-            <Input
-              value={newServiceName}
-              onChange={(e) => setNewServiceName(e.target.value)}
-              placeholder="Service Name"
-              className="my-3"
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddService}>Save</Button>
+    <div className="">
+      <Card>
+        <CardContent>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Services</h2>
+              <p className="text-sm text-slate-500 mt-1">Manage services offered on the platform.</p>
             </div>
-          </DialogContent>
-        </Dialog>
+
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="Search services..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-sm"
+              />
+
+              {/* Add dialog */}
+              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
+                    <Plus className="w-4 h-4" /> Add Service
+                  </Button>
+                </DialogTrigger>
+
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add New Service</DialogTitle>
+                    <DialogDescription>Enter service name to add a new service</DialogDescription>
+                  </DialogHeader>
+
+                  <div className="mt-3">
+                    <Input
+                      value={newServiceName}
+                      onChange={(e) => setNewServiceName(e.target.value)}
+                      placeholder="Service Name"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddService}>Save</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="mt-4">
+        {loading ? (
+          <div className="text-center py-8 text-slate-500">Loading services...</div>
+        ) : error ? (
+          <div className="text-red-600 py-4">{error}</div>
+        ) : (
+          <div className="overflow-x-auto bg-white rounded-md shadow-sm">
+            <table className="min-w-full divide-y">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Package</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-600">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y">
+                {list.map((service) => (
+                  <tr key={service.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-sm text-slate-700">{service.id}</td>
+                    <td className="px-4 py-3 text-sm text-slate-800">{service.name}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {service.package_enabled ? (
+                        <Badge className="bg-emerald-100 text-emerald-800">Enabled</Badge>
+                      ) : (
+                        <Badge className="bg-slate-100 text-slate-700">Disabled</Badge>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3 text-sm text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEdit(service)}
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(service.id)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
+              <div className="text-sm text-slate-600">
+                Showing page {page} of {totalPages}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+                <div className="px-3 py-1 border rounded bg-white">{page}</div>
+                <Button size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Search */}
-      <Input
-        placeholder="Search services..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={(v) => { if (!v) { setIsEditOpen(false); setEditingService(null); } else setIsEditOpen(v); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Service</DialogTitle>
+            <DialogDescription>Update allowed fields for this service</DialogDescription>
+          </DialogHeader>
 
-      {/* Loading / Error */}
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
+          <div className="mt-3 space-y-3">
+            <label className="text-sm text-slate-600">Service Name</label>
+            <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
 
-      {/* Service Table */}
-      <table className="w-full border-collapse mt-4">
-        <thead className="bg-green-50">
-          <tr>
-            <th className="border p-2">ID</th>
-            <th className="border p-2">Name</th>
-            <th className="border p-2">Package Enabled</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((service) => (
-            <tr key={service.id} className="hover:bg-green-50">
-              <td className="border p-2">{service.id}</td>
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm text-slate-600">Package Enabled</label>
+                <div className="text-xs text-slate-500">Toggle to enable packages for this service</div>
+              </div>
+              <Switch checked={editPackageEnabled} onCheckedChange={(v) => setEditPackageEnabled(Boolean(v))} />
+            </div>
+          </div>
 
-              {/* Name Column */}
-              <td className="border p-2">
-                {editingService?.id === service.id ? (
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                  />
-                ) : (
-                  service.name
-                )}
-              </td>
-
-              {/* Package Enabled Column */}
-              <td className="border p-2 text-center">
-                {editingService?.id === service.id ? (
-                  <Switch
-                    checked={editingService.package_enabled}
-                    onCheckedChange={(val) =>
-                      setEditingService((prev) => ({
-                        ...prev,
-                        package_enabled: val,
-                      }))
-                    }
-                  />
-                ) : service.package_enabled ? (
-                  "Enabled"
-                ) : (
-                  "Disabled"
-                )}
-              </td>
-
-              {/* Actions */}
-              <td className="border p-2 flex gap-2">
-                {editingService?.id === service.id ? (
-                  <>
-                    <Button size="sm" onClick={handleUpdate}>
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingService(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button size="sm" onClick={() => startEdit(service)}>
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(service.id)}
-                    >
-                      Delete
-                    </Button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-3 mt-4">
-          <Button disabled={page === 1} onClick={() => setPage(page - 1)}>
-            Prev
-          </Button>
-          <span>
-            {page} / {totalPages}
-          </span>
-          <Button
-            disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingService(null); }}>
+              <X className="w-4 h-4 mr-1" /> Cancel
+            </Button>
+            <Button onClick={handleUpdate} className="bg-green-600 hover:bg-green-700 text-white">
+              <Check className="w-4 h-4 mr-1" /> Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -35,7 +35,7 @@ export default function GharbetiLayout({ children }) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/users/about/gharbeti", { credentials: "include" })
+        const res = await fetch("https://backendwala.onrender.com/api/users/about/gharbeti", { credentials: "include" })
         const data = await res.json()
         console.log("THis is data",data.data.gharbeti);
         

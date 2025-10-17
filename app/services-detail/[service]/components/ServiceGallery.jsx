@@ -8,7 +8,7 @@ export default function ServiceImageGallery({ images = [] }) {
     setMainImage(images[0] || "/fallback.png");
   }, [images]);
 
-  const getImageUrl = (img) => img ? `http://localhost:5000${img}` : "/fallback.png";
+  const getImageUrl = (img) => img ? `${process.env.RENDER_BASE}${img}` : "/fallback.png";
 
   return (
     <div>

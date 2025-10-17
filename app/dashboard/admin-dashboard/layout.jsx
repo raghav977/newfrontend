@@ -15,7 +15,7 @@ export default function AdminLayout({ children }) {
   console.log("This is token",token)
   if (!token) {
     return;
-    redirect("/login");
+    // redirect("/login");
   }
 
   let user;
@@ -25,20 +25,23 @@ export default function AdminLayout({ children }) {
     if (!user.roles || !user.roles.includes("Admin")) {
       console.log("User is not admin");
       redirect("/auth/login/admin")
-      return;
-      redirect("/");
+      
     }
   } catch (err) {
     console.error("JWT verification failed:", err);
-    return;
+    
 
-    redirect("/login");
+    
   }
 
   return (
+    <>
     <div className="flex h-screen bg-white">
       <Sidebar user={user} />
       <main className="flex-1 bg-white p-8 overflow-auto">{children}</main>
     </div>
+
+    {!user.roles.includes("Admin") && redirect("/auth/login/admin")}
+    </>
   );
 }

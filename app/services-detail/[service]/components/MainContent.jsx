@@ -14,22 +14,58 @@ import { io } from "socket.io-client";
 import {fetchAboutUser} from "@/app/redux/slices/authSlice";
 
 export default function ServiceDetailPage() {
+
+  const [customerLocation,setCustomerLocation] = useState(null);
+
+
   const { service } = useParams();
   const dispatch = useDispatch();
   const { selectedService: { data: serviceDetail, loading, error } } = useSelector((state) => state.servicesReal);
+  console.log("Service Detail:", serviceDetail);
   const { user } = useSelector((state) => state.auth); 
   console.log("User in ServiceDetailPage:", user);
 
   const [schedules, setSchedules] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  // Fetch service detail
+  
+
+useEffect(() => {
+  // Only run on client side
+  if (typeof window === 'undefined') return;
+  
+  if (navigator.geolocation) {
+    console.log("Fetching user location...");
+
+    // navigator.geolocation.getCurrentPosition(
+    //   (pos) => setCustomerLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+    //   (err) => setCustomerLocation(null)
+    // );
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords;
+      console.log("User's location:", latitude, longitude);
+      setCustomerLocation({ lat: latitude, lon: longitude });
+      console.log("Customer location set:", { lat: latitude, lon: longitude });
+    }, (error) => {
+      console.error("Error fetching location:", error);
+      setCustomerLocation(null);
+    });
+  }
+}, []);
+
+
+
   useEffect(() => {
     if (service) {
-      dispatch(fetchServiceDetailById(service));
+      dispatch(fetchServiceDetailById({
+        service,
+        lat: customerLocation ? customerLocation.lat : null,
+        lon: customerLocation ? customerLocation.lon : null
+      }));
       dispatch(fetchAboutUser())
     }
-  }, [service, dispatch]);
+  }, [service, customerLocation, dispatch]);
 
   // Prepare schedules for booking component
   useEffect(() => {
@@ -47,7 +83,7 @@ export default function ServiceDetailPage() {
   // Initialize socket only if user is signed in
   useEffect(() => {
     if (user) {
-      const newSocket = io("http://localhost:5000", {
+      const newSocket = io(`${process.env.NEXT_PUBLIC_API_BASE_URL}`, {
         query: { userId: user.id },
       });
       console.log("Socket initialized:", newSocket);
@@ -130,6 +166,7 @@ export default function ServiceDetailPage() {
               schedules={schedules}
               serviceDetail={serviceDetail}
               user={user}
+              customerLocation={customerLocation}
               socket={socket} // pass socket for real-time bid
             />
             <PackageContent packages={serviceDetail.Packages || []} />

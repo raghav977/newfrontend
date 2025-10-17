@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE = "http://localhost:5000/api/admin/service";
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/service`
+
+// const API_BASE = "https://backendwala.onrender.com/api/admin/service";
 
 // -------------------- THUNKS -------------------- //
 

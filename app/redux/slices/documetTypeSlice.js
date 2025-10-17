@@ -1,11 +1,14 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
+
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/kyc/document-type/`
+
 // Async thunk to fetch document types
 export const fetchDocumentType = createAsyncThunk(
   "document/fetchDocumentType",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("http://localhost:5000/api/kyc/document-type/", {
+      const response = await fetch(`${BASE_URL}`, {
         credentials: "include", 
       });
 

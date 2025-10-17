@@ -1,7 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 
-const BASE_URL = "http://localhost:5000/api/services";
+
+const BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_UR}/services`;
 
 
 

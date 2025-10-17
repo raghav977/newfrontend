@@ -1,3 +1,3 @@
 
 
-export const APIURL = 'http://localhost:5000/api/'
+export const APIURL = 'https://backendwala.onrender.com/api/'

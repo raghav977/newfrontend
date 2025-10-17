@@ -8,6 +8,8 @@ import gharbetiSliceReducer from "./slices/gharbetislice"
 import servicesSliceReducerRealWala from "./slices/servicesSlice"
 // import allServiceReducer from "./slices/serviceallSlice"
 
+import bookingReducer from "./slices/bookingSlice"
+
 import allServiceReducer from "./slices/serviceallSlice"
 export const store = configureStore({
   reducer: {
@@ -18,7 +20,9 @@ export const store = configureStore({
     subcategory: subcategoryReducer,
     gharbeti: gharbetiSliceReducer,
     allServices: allServiceReducer,
-    servicesReal: servicesSliceReducerRealWala
+    servicesReal: servicesSliceReducerRealWala,
+    booking:bookingReducer
+
 
   },
 });
