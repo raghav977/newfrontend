@@ -31,7 +31,7 @@ export default function LoginPage() {
       console.log("This is the resultAction",resultAction)
       
       if (loginUser.fulfilled.match(resultAction)) {
-        window.location.href = "/";
+        // window.location.href = "/";
       } else {
         console.log("This is the error",resultAction.payload)
         toast.error(resultAction.payload || "Login failed", {
